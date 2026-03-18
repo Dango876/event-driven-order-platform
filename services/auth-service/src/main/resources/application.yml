@@ -1,0 +1,73 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/auth_db}
+    username: ${DB_USERNAME:auth_user}
+    password: ${DB_PASSWORD:auth_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${OAUTH_GOOGLE_CLIENT_ID:dummy-google-client-id}
+            client-secret: ${OAUTH_GOOGLE_CLIENT_SECRET:dummy-google-client-secret}
+            scope:
+              - openid
+              - profile
+              - email
+          github:
+            client-id: ${OAUTH_GITHUB_CLIENT_ID:dummy-github-client-id}
+            client-secret: ${OAUTH_GITHUB_CLIENT_SECRET:dummy-github-client-secret}
+            scope:
+              - read:user
+              - user:email
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+      auto.register.schemas: true
+
+app:
+  kafka:
+    topics:
+      user-created: ${KAFKA_TOPIC_USER_CREATED:user.created}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+jwt:
+  secret: ${JWT_SECRET:VGhpc0lzRGV2T25seVN1cGVyU2VjcmV0S2V5VGhhdE11c3RCZUNoYW5nZWRJblByb2QxMjM0NQ==}
+  access-token-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:3600000}
+  refresh-token-expiration-days: ${JWT_REFRESH_EXPIRATION_DAYS:7}
+
+auth:
+  base-url: ${AUTH_BASE_URL:http://localhost:8081}
+  email-confirmation:
+    expiration-minutes: ${EMAIL_CONFIRMATION_EXPIRATION_MINUTES:30}

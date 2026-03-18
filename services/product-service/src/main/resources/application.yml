@@ -1,0 +1,16 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: product-service
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27018/product_db}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "OrderStatusChangedEvent",
+  "namespace": "com.procurehub.order.avro",
+  "fields": [
+    { "name": "orderId", "type": "long" },
+    { "name": "oldStatus", "type": "string" },
+    { "name": "newStatus", "type": "string" },
+    { "name": "statusMessage", "type": ["null", "string"], "default": null },
+    { "name": "updatedAt", "type": "string" }
+  ]
+}

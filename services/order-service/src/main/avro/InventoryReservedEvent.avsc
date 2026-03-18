@@ -1,0 +1,14 @@
+﻿{
+  "type": "record",
+  "name": "InventoryReservedEvent",
+  "namespace": "com.procurehub.inventory.avro",
+  "fields": [
+    { "name": "orderId", "type": "long" },
+    { "name": "productId", "type": "long" },
+    { "name": "quantity", "type": "int" },
+    { "name": "availableQuantity", "type": "int" },
+    { "name": "reservedQuantity", "type": "int" },
+    { "name": "message", "type": ["null", "string"], "default": null },
+    { "name": "reservedAt", "type": "string" }
+  ]
+}

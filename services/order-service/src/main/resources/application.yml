@@ -1,0 +1,58 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: order-service
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5436/order_db}
+    username: ${DB_USERNAME:order_user}
+    password: ${DB_PASSWORD:order_pass}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:order-service}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+    properties:
+      schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
+      auto.register.schemas: true
+      specific.avro.reader: true
+
+app:
+  kafka:
+    topics:
+      order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
+      order-status-changed: ${KAFKA_TOPIC_ORDER_STATUS_CHANGED:order.status-changed}
+      inventory-reserved: ${KAFKA_TOPIC_INVENTORY_RESERVED:inventory.reserved}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+inventory:
+  grpc:
+    host: ${INVENTORY_GRPC_HOST:127.0.0.1}
+    port: ${INVENTORY_GRPC_PORT:9091}

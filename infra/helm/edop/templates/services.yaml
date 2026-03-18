@@ -1,0 +1,53 @@
+{{- range $component := .Values.infrastructure }}
+{{- if and $component.enabled $component.service }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $component.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $component.name }}
+    app.kubernetes.io/component: infrastructure
+spec:
+  type: {{ default "ClusterIP" $component.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ $component.name }}
+  ports:
+    {{- range $port := $component.service.ports }}
+    - name: {{ $port.name }}
+      port: {{ $port.port }}
+      targetPort: {{ $port.targetPort }}
+      {{- if $port.nodePort }}
+      nodePort: {{ $port.nodePort }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}
+
+{{- range $app := .Values.applications }}
+{{- if and $app.enabled $app.service }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $app.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $app.name }}
+    app.kubernetes.io/component: application
+spec:
+  type: {{ default "ClusterIP" $app.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ $app.name }}
+  ports:
+    {{- range $port := $app.service.ports }}
+    - name: {{ $port.name }}
+      port: {{ $port.port }}
+      targetPort: {{ $port.targetPort }}
+      {{- if $port.nodePort }}
+      nodePort: {{ $port.nodePort }}
+      {{- end }}
+    {{- end }}
+{{- end }}
+{{- end }}

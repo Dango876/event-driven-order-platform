@@ -1,0 +1,116 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - StripPrefix=1
+
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - StripPrefix=1
+
+        - id: product-service
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/products/**
+          filters:
+            - StripPrefix=1
+
+        - id: inventory-service
+          uri: ${INVENTORY_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - StripPrefix=1
+
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=1
+
+        - id: auth-service-docs
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api-docs/auth
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: user-service-docs
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api-docs/user
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: product-service-docs
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api-docs/product
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: inventory-service-docs
+          uri: ${INVENTORY_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api-docs/inventory
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: order-service-docs
+          uri: ${ORDER_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api-docs/order
+          filters:
+            - SetPath=/v3/api-docs
+
+        - id: notification-service-docs
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api-docs/notification
+          filters:
+            - SetPath=/v3/api-docs
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: auth-service
+        url: /api-docs/auth
+      - name: user-service
+        url: /api-docs/user
+      - name: product-service
+        url: /api-docs/product
+      - name: inventory-service
+        url: /api-docs/inventory
+      - name: order-service
+        url: /api-docs/order
+      - name: notification-service
+        url: /api-docs/notification
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

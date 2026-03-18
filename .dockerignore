@@ -1,0 +1,12 @@
+.git
+.github
+.idea
+.run
+.logs
+**/target
+**/target/**
+**/.DS_Store
+**/*.log
+docs
+infra
+.secrets

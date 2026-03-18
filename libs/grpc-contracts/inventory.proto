@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package procurehub.inventory.v1;
+
+option java_multiple_files = true;
+option java_package = "com.procurehub.grpc.inventory.v1";
+option java_outer_classname = "InventoryProto";
+
+service InventoryService {
+  rpc CheckAndReserve(CheckAndReserveRequest) returns (CheckAndReserveResponse);
+  rpc ReleaseReservation(ReleaseReservationRequest) returns (ReleaseReservationResponse);
+  rpc GetStock(GetStockRequest) returns (GetStockResponse);
+}
+
+message CheckAndReserveRequest {
+  int64 productId = 1;
+  int32 quantity = 2;
+}
+
+message CheckAndReserveResponse {
+  bool success = 1;
+  int64 productId = 2;
+  int32 availableQuantity = 3;
+  int32 reservedQuantity = 4;
+  string message = 5;
+}
+
+message ReleaseReservationRequest {
+  int64 productId = 1;
+  int32 quantity = 2;
+}
+
+message ReleaseReservationResponse {
+  bool success = 1;
+  int64 productId = 2;
+  int32 availableQuantity = 3;
+  int32 reservedQuantity = 4;
+  string message = 5;
+}
+
+message GetStockRequest {
+  int64 productId = 1;
+}
+
+message GetStockResponse {
+  int64 productId = 1;
+  int32 availableQuantity = 2;
+  int32 reservedQuantity = 3;
+  int32 freeQuantity = 4;
+}
