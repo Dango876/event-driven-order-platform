@@ -132,7 +132,7 @@ function Ensure-NamespaceReady {
     param([Parameter(Mandatory = $true)][string]$Ns)
 
     $nsObj = $null
-    $nsJson = & kubectl get namespace $Ns -o json 2>$null
+    $nsJson = & kubectl get namespace $Ns -o json --ignore-not-found 2>$null
     if ($LASTEXITCODE -eq 0 -and -not [string]::IsNullOrWhiteSpace($nsJson)) {
         try {
             $nsObj = $nsJson | ConvertFrom-Json
@@ -305,5 +305,6 @@ Write-Host "k3d stack is ready."
 Write-Host "Gateway health:  http://localhost:$GatewayHostPort/actuator/health"
 Write-Host "Gateway swagger: http://localhost:$GatewayHostPort/swagger-ui.html"
 Write-Host "Check pods:       kubectl get pods -n $Namespace"
+
 
 
