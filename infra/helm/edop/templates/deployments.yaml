@@ -1,0 +1,181 @@
+{{- range $component := .Values.infrastructure }}
+{{- if $component.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $component.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $component.name }}
+    app.kubernetes.io/component: infrastructure
+spec:
+  replicas: {{ default 1 $component.replicas }}
+  {{- if $component.strategy }}
+  strategy:
+    {{- toYaml $component.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $component.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "edop.commonLabels" $ | nindent 8 }}
+        app.kubernetes.io/name: {{ $component.name }}
+        app.kubernetes.io/component: infrastructure
+    spec:
+      {{- if hasKey $component "enableServiceLinks" }}
+      enableServiceLinks: {{ $component.enableServiceLinks }}
+      {{- end }}
+      containers:
+        - name: {{ $component.name }}
+          image: {{ $component.image }}
+          imagePullPolicy: {{ default "IfNotPresent" $.Values.global.imagePullPolicy }}
+          {{- if $component.command }}
+          command:
+            {{- range $cmd := $component.command }}
+            - {{ $cmd | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $component.args }}
+          args:
+            {{- range $arg := $component.args }}
+            - {{ $arg | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $component.containerPorts }}
+          ports:
+            {{- range $port := $component.containerPorts }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.containerPort }}
+            {{- end }}
+          {{- end }}
+          {{- if $component.env }}
+          env:
+            {{- range $key, $value := $component.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $component.probes }}
+          livenessProbe:
+            {{- if $component.probes.httpPath }}
+            httpGet:
+              path: {{ $component.probes.httpPath }}
+              port: {{ $component.probes.httpPort }}
+            {{- else if $component.probes.tcpPort }}
+            tcpSocket:
+              port: {{ $component.probes.tcpPort }}
+            {{- end }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            {{- if $component.probes.httpPath }}
+            httpGet:
+              path: {{ $component.probes.httpPath }}
+              port: {{ $component.probes.httpPort }}
+            {{- else if $component.probes.tcpPort }}
+            tcpSocket:
+              port: {{ $component.probes.tcpPort }}
+            {{- end }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          {{- end }}
+{{- end }}
+{{- end }}
+
+{{- range $app := .Values.applications }}
+{{- if $app.enabled }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $app.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $app.name }}
+    app.kubernetes.io/component: application
+spec:
+  replicas: {{ default 1 $app.replicas }}
+  {{- if $app.strategy }}
+  strategy:
+    {{- toYaml $app.strategy | nindent 4 }}
+  {{- end }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $app.name }}
+  template:
+    metadata:
+      labels:
+        {{- include "edop.commonLabels" $ | nindent 8 }}
+        app.kubernetes.io/name: {{ $app.name }}
+        app.kubernetes.io/component: application
+    spec:
+      {{- if hasKey $app "enableServiceLinks" }}
+      enableServiceLinks: {{ $app.enableServiceLinks }}
+      {{- end }}
+      containers:
+        - name: {{ $app.name }}
+          image: {{ $app.image }}
+          imagePullPolicy: {{ default "IfNotPresent" $.Values.global.imagePullPolicy }}
+          {{- if $app.command }}
+          command:
+            {{- range $cmd := $app.command }}
+            - {{ $cmd | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.args }}
+          args:
+            {{- range $arg := $app.args }}
+            - {{ $arg | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.containerPorts }}
+          ports:
+            {{- range $port := $app.containerPorts }}
+            - name: {{ $port.name }}
+              containerPort: {{ $port.containerPort }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.env }}
+          env:
+            {{- range $key, $value := $app.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.envFromSecrets }}
+          envFrom:
+            {{- range $secretName := $app.envFromSecrets }}
+            - secretRef:
+                name: {{ $secretName }}
+            {{- end }}
+          {{- end }}
+          {{- if $app.probes }}
+          livenessProbe:
+            {{- if $app.probes.httpPath }}
+            httpGet:
+              path: {{ $app.probes.httpPath }}
+              port: {{ $app.probes.httpPort }}
+            {{- else if $app.probes.tcpPort }}
+            tcpSocket:
+              port: {{ $app.probes.tcpPort }}
+            {{- end }}
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          readinessProbe:
+            {{- if $app.probes.httpPath }}
+            httpGet:
+              path: {{ $app.probes.httpPath }}
+              port: {{ $app.probes.httpPort }}
+            {{- else if $app.probes.tcpPort }}
+            tcpSocket:
+              port: {{ $app.probes.tcpPort }}
+            {{- end }}
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          {{- end }}
+{{- end }}
+{{- end }}
+
