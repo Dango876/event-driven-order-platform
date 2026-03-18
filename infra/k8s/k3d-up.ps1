@@ -128,6 +128,40 @@ function Show-ClusterDiagnostics {
     Write-Host ""
 }
 
+function Recover-InfraCore {
+    param([Parameter(Mandatory = $true)][string]$Ns)
+
+    Write-Host "Attempting infra recovery for redpanda/schema-registry in namespace '$Ns'..."
+
+    try {
+        & kubectl rollout restart deployment/redpanda -n $Ns | Out-Host
+    }
+    catch {
+        Write-Host "Skip redpanda restart: $_"
+    }
+
+    try {
+        & kubectl rollout restart deployment/schema-registry -n $Ns | Out-Host
+    }
+    catch {
+        Write-Host "Skip schema-registry restart: $_"
+    }
+
+    try {
+        & kubectl wait -n $Ns --for=condition=Available deployment/redpanda --timeout=600s | Out-Host
+    }
+    catch {
+        Write-Host "redpanda is not Available after recovery wait."
+    }
+
+    try {
+        & kubectl wait -n $Ns --for=condition=Available deployment/schema-registry --timeout=600s | Out-Host
+    }
+    catch {
+        Write-Host "schema-registry is not Available after recovery wait."
+    }
+}
+
 function Ensure-NamespaceReady {
     param([Parameter(Mandatory = $true)][string]$Ns)
 
@@ -280,7 +314,7 @@ if ($ImportInfraImages) {
 Write-Host "Importing images into k3d cluster '$ClusterName'..."
 $importOutput = & k3d image import $images -c $ClusterName 2>&1
 $importOutput | Out-Host
-if ($LASTEXITCODE -ne 0 -or ($importOutput -join "`n") -match "failed to import images in node") {
+if ($LASTEXITCODE -ne 0) {
     throw "k3d image import failed"
 }
 
@@ -290,11 +324,24 @@ if (Test-Path $injectScriptPath) {
     & $injectScriptPath -Namespace $Namespace -SecretsDir $secretsDir
 }
 
-Write-Host "Deploying Helm release..."
-& helm upgrade --install edop $chartPath -n $Namespace -f $devValuesPath --wait --timeout ("{0}m" -f $HelmTimeoutMinutes)
-if ($LASTEXITCODE -ne 0) {
+$helmSucceeded = $false
+for ($helmAttempt = 1; $helmAttempt -le 2; $helmAttempt++) {
+    Write-Host "Deploying Helm release (attempt $helmAttempt/2)..."
+    & helm upgrade --install edop $chartPath -n $Namespace -f $devValuesPath --wait --timeout ("{0}m" -f $HelmTimeoutMinutes)
+    if ($LASTEXITCODE -eq 0) {
+        $helmSucceeded = $true
+        break
+    }
+
     Show-ClusterDiagnostics -Ns $Namespace
-    throw "helm upgrade --install failed"
+
+    if ($helmAttempt -lt 2) {
+        Recover-InfraCore -Ns $Namespace
+    }
+}
+
+if (-not $helmSucceeded) {
+    throw "helm upgrade --install failed after 2 attempts"
 }
 
 Write-Host "Waiting for gateway health endpoint..."
