@@ -38,6 +38,7 @@ Main stack used:
   - metrics/logs verification documented in `docs/observability-local-run.md`
 - Local alerting baseline:
   - Alertmanager service in Docker Compose
+  - external webhook routing via `ALERT_WEBHOOK_URL` (default local sink on `http://localhost:8088`)
   - Prometheus alert rules:
     - `EdopServiceDown`
     - `EdopHigh5xxRate`
@@ -96,6 +97,7 @@ Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
 - Health: `http://localhost:8080/actuator/health`
 - Prometheus: `http://localhost:9090`
 - Alertmanager: `http://localhost:9093`
+- Alert webhook sink: `http://localhost:8088`
 - Grafana: `http://localhost:3000`
 - Loki readiness: `http://localhost:3100/ready`
 - API docs via gateway paths:
@@ -109,6 +111,7 @@ Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
 Detailed docs:
 
 - `docs/acceptance-checklist.md`
+- `docs/alert-routing.md`
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
 - `docs/observability-local-run.md`
@@ -124,12 +127,14 @@ Detailed docs:
 - Reproducible verification scripts: done
 - Observability baseline (metrics + logs + dashboard): done
 - Alerting baseline (Prometheus rules + Alertmanager): done
+- External webhook alert routing baseline: done
+- Load/SLO baseline tooling and local run: done
 
 ## 7) Notes
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
-- Remaining next-iteration items are production-grade load/SLO validation and external alert routing integrations.
+- Remaining next-iteration items are production-grade long-run load/SLO validation and operational on-call escalation policy.
 
 ## 8) CI/Security evidence
 

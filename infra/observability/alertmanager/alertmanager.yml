@@ -2,7 +2,7 @@ global:
   resolve_timeout: 5m
 
 route:
-  receiver: default
+  receiver: external-webhook
   group_by: ["alertname", "job", "severity"]
   group_wait: 10s
   group_interval: 30s
@@ -10,3 +10,7 @@ route:
 
 receivers:
   - name: default
+  - name: external-webhook
+    webhook_configs:
+      - url: __ALERT_WEBHOOK_URL__
+        send_resolved: true

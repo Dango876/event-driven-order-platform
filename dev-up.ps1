@@ -149,6 +149,7 @@ $infraPorts = @(
     @{ Name = "Redis"; Port = 6379 },
     @{ Name = "Prometheus"; Port = 9090 },
     @{ Name = "Alertmanager"; Port = 9093 },
+    @{ Name = "Alert Webhook Sink"; Port = 8088 },
     @{ Name = "Grafana"; Port = 3000 },
     @{ Name = "Loki"; Port = 3100 }
 )

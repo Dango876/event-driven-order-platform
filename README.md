@@ -27,6 +27,7 @@ Expected result:
 - Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 - Prometheus is available at `http://localhost:9090`.
 - Alertmanager is available at `http://localhost:9093`.
+- Local alert webhook sink is available at `http://localhost:8088`.
 - Loki is available at `http://localhost:3100/ready`.
 - Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
 - Preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`.
@@ -66,6 +67,7 @@ make dev-down
 ## Additional docs
 
 - `docs/acceptance-checklist.md`
+- `docs/alert-routing.md`
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
 - `docs/observability-local-run.md`

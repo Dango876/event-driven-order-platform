@@ -19,6 +19,7 @@ Run local observability for all services and verify:
 
 - Prometheus: `http://localhost:9090`
 - Alertmanager: `http://localhost:9093`
+- Alert webhook sink: `http://localhost:8088`
 - Loki: `http://localhost:3100/ready`
 - Grafana: `http://localhost:3000`
   - login: `admin`
@@ -50,6 +51,14 @@ Prometheus alert rules are loaded from:
 
 - `infra/observability/prometheus/rules/edop-alerts.yml`
 
+Alertmanager external routing is configured via webhook URL:
+
+- env var: `ALERT_WEBHOOK_URL`
+- default in local stack: `http://alert-webhook-sink:8080/alerts`
+- override example (real external receiver):
+  - PowerShell session: `$env:ALERT_WEBHOOK_URL = "https://your-webhook.example/alerts"`
+  - then restart stack: `.\dev-down.ps1` and `.\dev-up.ps1`
+
 Configured baseline alerts:
 
 - `EdopServiceDown` (critical): service target is down for > 1m
@@ -69,17 +78,20 @@ Configured baseline alerts:
 4. Open Alertmanager:
    - `http://localhost:9093`
    - Expected: UI is available.
-5. Open Loki readiness endpoint:
+5. Open local webhook sink:
+   - `http://localhost:8088`
+   - Expected: requests appear when an alert fires.
+6. Open Loki readiness endpoint:
    - `http://localhost:3100/ready`
    - Expected: `ready`.
-6. Open Grafana:
+7. Open Grafana:
    - `Connections -> Data sources`
    - Expected: `Prometheus` and `Loki` exist and are healthy.
-7. In Grafana open `Explore`:
+8. In Grafana open `Explore`:
    - choose datasource `Loki`
    - run query: `{job="edop-local"}`
    - Expected: logs from local services are visible.
-8. Open dashboard:
+9. Open dashboard:
    - `Dashboards -> EDOP Local -> EDOP Local Observability`
    - Expected panels:
      - `HTTP RPS`

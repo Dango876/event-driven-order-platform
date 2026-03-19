@@ -156,6 +156,8 @@ Covered:
   - Panels verified: `HTTP RPS`, `HTTP 5xx Rate`, `HTTP p95 Latency (ms)`, `Recent ERROR Logs`.
 - Alerting:
   - Alertmanager readiness: `http://localhost:9093/-/ready`
+  - External webhook routing configured via `ALERT_WEBHOOK_URL`
+  - Local webhook sink endpoint: `http://localhost:8088`
   - Alert rules present in Prometheus:
     - `EdopServiceDown`
     - `EdopHigh5xxRate`
@@ -165,12 +167,26 @@ Evidence:
 - Local verification commands:
   - `(Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing).StatusCode`
+  - `(Invoke-WebRequest http://localhost:8088 -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3000/api/health -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing).Content`
   - `Invoke-WebRequest http://localhost:9090/api/v1/rules -UseBasicParsing`
 
-## 9. Remaining acceptance items (outside current baseline)
+## 9. Load/SLO baseline (local)
+
+Verification status:
+- `PASS` on local k6 baseline run.
+
+Evidence:
+- command: `.\infra\performance\run-load-baseline.ps1 -Duration 20s -Vus 20`
+- observed result:
+  - `http_req_failed`: `0%` (`PASS`, threshold `< 1%`)
+  - `http_req_duration p95`: `7.23ms` (`PASS`, threshold `< 750ms`)
+  - `checks pass rate`: `100%` (`PASS`, threshold `> 99%`)
+  - request rate baseline: `~128.82 req/s`
+
+## 10. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
-- Extended load/performance validation with explicit SLA/SLO thresholds.
-- External alert routing (e.g., Slack/Email/PagerDuty) and escalation policy.
+- Extended multi-scenario load/performance validation (beyond local baseline), with documented long-run SLA/SLO envelopes.
+- Production alert routing governance (on-call schedule/escalation policy and receiver hardening).
