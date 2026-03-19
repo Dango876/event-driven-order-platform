@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8082
 
 spring:
@@ -38,9 +38,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 app:
   kafka:
     topics:
       user-created: ${KAFKA_TOPIC_USER_CREATED:user.created}
+

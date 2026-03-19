@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8083
 
 spring:
@@ -13,4 +13,5 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
+

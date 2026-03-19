@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8087
 
 spring:
@@ -20,10 +20,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 app:
   kafka:
     topics:
       order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
       order-status-changed: ${KAFKA_TOPIC_ORDER_STATUS_CHANGED:order.status-changed}
+

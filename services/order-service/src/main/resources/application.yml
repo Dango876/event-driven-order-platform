@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8086
 
 spring:
@@ -50,9 +50,10 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 inventory:
   grpc:
     host: ${INVENTORY_GRPC_HOST:127.0.0.1}
     port: ${INVENTORY_GRPC_PORT:9091}
+

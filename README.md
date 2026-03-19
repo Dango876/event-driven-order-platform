@@ -25,6 +25,8 @@ Expected result:
 - Services are healthy.
 - Gateway is available at `http://localhost:8080`.
 - Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
+- Prometheus is available at `http://localhost:9090`.
+- Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
 
 ## Stop local stack
 
@@ -56,5 +58,6 @@ make dev-down
 
 - `docs/acceptance-checklist.md`
 - `docs/k3d-helm-local-run.md`
+- `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`

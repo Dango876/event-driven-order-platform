@@ -1,4 +1,4 @@
-server:
+﻿server:
   port: 8084
 
 spring:
@@ -37,7 +37,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus
 
 grpc:
   server:
@@ -47,3 +47,4 @@ app:
   kafka:
     topics:
       inventory-reserved: ${KAFKA_TOPIC_INVENTORY_RESERVED:inventory.reserved}
+

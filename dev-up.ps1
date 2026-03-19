@@ -120,7 +120,9 @@ $infraPorts = @(
     @{ Name = "Inventory Postgres"; Port = 5435 },
     @{ Name = "Order Postgres"; Port = 5436 },
     @{ Name = "MongoDB"; Port = 27018 },
-    @{ Name = "Redis"; Port = 6379 }
+    @{ Name = "Redis"; Port = 6379 },
+    @{ Name = "Prometheus"; Port = 9090 },
+    @{ Name = "Grafana"; Port = 3000 }
 )
 
 Write-Host "Starting infra containers..."
