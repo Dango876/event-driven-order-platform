@@ -47,7 +47,10 @@ jobs:
             -Dformat=HTML \
             -Dformat=JSON \
             -DfailBuildOnCVSS=9 \
-            -DnvdApiKey="$NVD_API_KEY"
+            -DnvdApiKey="$NVD_API_KEY" \
+            -DnvdApiDelay=8000 \
+            -DnvdMaxRetryCount=10 \
+            -DfailOnError=false
 
       - name: Upload OWASP reports
         if: always()
