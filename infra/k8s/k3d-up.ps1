@@ -321,7 +321,8 @@ $infraImages = @(
     "confluentinc/cp-schema-registry:7.6.1",
     "postgres:15-alpine",
     "mongo:7",
-    "redis:7-alpine"
+    "redis:7-alpine",
+    "jaegertracing/all-in-one:1.61.0"
 )
 
 if ($ImportInfraImages) {

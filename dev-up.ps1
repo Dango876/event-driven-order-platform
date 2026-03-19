@@ -150,6 +150,8 @@ $infraPorts = @(
     @{ Name = "Prometheus"; Port = 9090 },
     @{ Name = "Alertmanager"; Port = 9093 },
     @{ Name = "Alert Webhook Sink"; Port = 8088 },
+    @{ Name = "Jaeger UI"; Port = 16686 },
+    @{ Name = "Jaeger OTLP"; Port = 4318 },
     @{ Name = "Grafana"; Port = 3000 },
     @{ Name = "Loki"; Port = 3100 }
 )
@@ -183,6 +185,7 @@ foreach ($p in $infraPorts) {
 
 Wait-HttpStatus -Name "Prometheus readiness" -Url "http://localhost:9090/-/ready" -ExpectedStatusCode 200 -TimeoutSec 120
 Wait-HttpStatus -Name "Alertmanager readiness" -Url "http://localhost:9093/-/ready" -ExpectedStatusCode 200 -TimeoutSec 120
+Wait-HttpStatus -Name "Jaeger UI" -Url "http://localhost:16686" -ExpectedStatusCode 200 -TimeoutSec 120
 Wait-HttpStatus -Name "Grafana health" -Url "http://localhost:3000/api/health" -ExpectedStatusCode 200 -TimeoutSec 120
 Wait-HttpStatus -Name "Loki readiness" -Url "http://localhost:3100/ready" -ExpectedStatusCode 200 -TimeoutSec 120
 

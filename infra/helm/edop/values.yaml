@@ -169,6 +169,27 @@ infrastructure:
     probes:
       tcpPort: 6379
 
+  - name: jaeger
+    enabled: true
+    image: jaegertracing/all-in-one:1.61.0
+    containerPorts:
+      - name: ui
+        containerPort: 16686
+      - name: otlp
+        containerPort: 4317
+    service:
+      type: ClusterIP
+      ports:
+        - name: ui
+          port: 16686
+          targetPort: 16686
+        - name: otlp
+          port: 4317
+          targetPort: 4317
+    probes:
+      httpPath: /
+      httpPort: 16686
+
 applications:
   - name: auth-service
     enabled: true
@@ -190,6 +211,7 @@ applications:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       AUTH_BASE_URL: http://auth-service:8081
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8081
@@ -213,6 +235,7 @@ applications:
       DB_PASSWORD: user_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8082
@@ -232,6 +255,7 @@ applications:
           targetPort: 8083
     env:
       MONGODB_URI: mongodb://mongodb:27017/product_db
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8083
@@ -261,6 +285,7 @@ applications:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       GRPC_SERVER_PORT: "9091"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8084
@@ -286,6 +311,7 @@ applications:
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       INVENTORY_GRPC_HOST: inventory-service
       INVENTORY_GRPC_PORT: "9091"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8086
@@ -306,6 +332,9 @@ applications:
     env:
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8087
@@ -331,6 +360,7 @@ applications:
       INVENTORY_SERVICE_URL: http://inventory-service:8084
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
       httpPort: 8080

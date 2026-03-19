@@ -1,4 +1,4 @@
-# Local Observability Run (Prometheus + Alertmanager + Grafana + Loki)
+# Local Observability Run (Prometheus + Alertmanager + Grafana + Loki + Jaeger)
 
 ## Goal
 
@@ -20,6 +20,7 @@ Run local observability for all services and verify:
 - Prometheus: `http://localhost:9090`
 - Alertmanager: `http://localhost:9093`
 - Alert webhook sink: `http://localhost:8088`
+- Jaeger UI: `http://localhost:16686`
 - Loki: `http://localhost:3100/ready`
 - Grafana: `http://localhost:3000`
   - login: `admin`
@@ -59,6 +60,11 @@ Alertmanager external routing is configured via webhook URL:
   - PowerShell session: `$env:ALERT_WEBHOOK_URL = "https://your-webhook.example/alerts"`
   - then restart stack: `.\dev-down.ps1` and `.\dev-up.ps1`
 
+Tracing export is configured via OTLP:
+
+- env var: `OTEL_EXPORTER_OTLP_ENDPOINT`
+- default in local stack: `http://localhost:4318/v1/traces` (Jaeger OTLP HTTP)
+
 Configured baseline alerts:
 
 - `EdopServiceDown` (critical): service target is down for > 1m
@@ -84,14 +90,17 @@ Configured baseline alerts:
 6. Open Loki readiness endpoint:
    - `http://localhost:3100/ready`
    - Expected: `ready`.
-7. Open Grafana:
+7. Open Jaeger:
+   - `http://localhost:16686`
+   - Expected: traces are visible after API traffic.
+8. Open Grafana:
    - `Connections -> Data sources`
    - Expected: `Prometheus` and `Loki` exist and are healthy.
-8. In Grafana open `Explore`:
+9. In Grafana open `Explore`:
    - choose datasource `Loki`
    - run query: `{job="edop-local"}`
    - Expected: logs from local services are visible.
-9. Open dashboard:
+10. Open dashboard:
    - `Dashboards -> EDOP Local -> EDOP Local Observability`
    - Expected panels:
      - `HTTP RPS`
