@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
         "spring.flyway.enabled=true",
+        "spring.datasource.driver-class-name=org.postgresql.Driver",
         "spring.kafka.listener.auto-startup=false",
         "spring.kafka.bootstrap-servers=localhost:9092",
         "management.tracing.sampling.probability=0.0"
