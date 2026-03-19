@@ -22,6 +22,7 @@ Run local observability for all services and verify:
 - Grafana: `http://localhost:3000`
   - login: `admin`
   - password: `admin`
+  - preloaded dashboard: `Dashboards -> EDOP Local -> EDOP Local Observability`
 
 ## What is scraped
 
@@ -61,6 +62,13 @@ Logs are collected from local files:
    - choose datasource `Loki`
    - run query: `{job="edop-local"}`
    - Expected: logs from local services are visible.
+6. Open dashboard:
+   - `Dashboards -> EDOP Local -> EDOP Local Observability`
+   - Expected panels:
+     - `HTTP RPS`
+     - `HTTP 5xx Rate`
+     - `HTTP p95 Latency (ms)`
+     - `Recent ERROR Logs`
 
 ## Stop
 

@@ -28,6 +28,7 @@ Expected result:
 - Prometheus is available at `http://localhost:9090`.
 - Loki is available at `http://localhost:3100/ready`.
 - Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
+- Preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`.
 
 ## Stop local stack
 
