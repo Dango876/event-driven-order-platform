@@ -104,3 +104,8 @@ Detailed docs:
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Some non-functional enterprise targets from the full specification (full observability stack, security scans in CI gate, strict SLA/SLO load validation) should be treated as next iteration items unless already implemented in CI.
+
+## 8) CI/Security evidence
+
+- CI (green): https://github.com/Dango876/event-driven-order-platform/actions/runs/23289711107
+- Security Scan (green): https://github.com/Dango876/event-driven-order-platform/actions/runs/23291101639
