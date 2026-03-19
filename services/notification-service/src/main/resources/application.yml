@@ -5,6 +5,11 @@ spring:
   application:
     name: notification-service
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
@@ -21,10 +26,26 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: ${TRACING_SAMPLING_PROBABILITY:1.0}
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 
 app:
   kafka:
     topics:
       order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
       order-status-changed: ${KAFKA_TOPIC_ORDER_STATUS_CHANGED:order.status-changed}
+  notification:
+    rate-limit:
+      enabled: ${NOTIFICATION_RATE_LIMIT_ENABLED:true}
+      capacity: ${NOTIFICATION_RATE_LIMIT_CAPACITY:20}
+      leak-per-second: ${NOTIFICATION_RATE_LIMIT_LEAK_PER_SECOND:5}
+      bucket-key-ttl-seconds: ${NOTIFICATION_RATE_LIMIT_BUCKET_TTL_SECONDS:3600}
+      order-user-ttl-seconds: ${NOTIFICATION_RATE_LIMIT_ORDER_USER_TTL_SECONDS:604800}
+      user-bucket-key-prefix: ${NOTIFICATION_RATE_LIMIT_USER_BUCKET_PREFIX:notification:bucket:user:}
+      order-bucket-key-prefix: ${NOTIFICATION_RATE_LIMIT_ORDER_BUCKET_PREFIX:notification:bucket:order:}
+      order-user-key-prefix: ${NOTIFICATION_RATE_LIMIT_ORDER_USER_PREFIX:notification:order-user:}
 
