@@ -1,10 +1,11 @@
-# Acceptance Checklist (Week 1/2)
+# Acceptance Checklist (Week 1/2 + Observability Baseline)
 
 ## Scope
 
 This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 1: project skeleton, CI baseline, Docker/Helm basics, runnable services.
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
+- Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
 Date of latest verification: 2026-03-19 (Europe/Moscow).
 
@@ -112,11 +113,18 @@ Covered by evidence above:
 - Gateway + service docs/health reachable.
 - Build/test command succeeds.
 - End-to-end order lifecycle baseline passes.
+- Observability and alerting baseline is available and verified locally.
 
-## 6. Remaining acceptance items (outside Week 1/2 closure)
+## 6. Kubernetes acceptance artifact (k3d + Helm)
 
-Still to be finalized later against full project acceptance:
-- Stable repeatable Kubernetes acceptance run (k3d + Helm) as final check artifact.
+Verification status:
+- `PASS` on local k3d + Helm run.
+
+Evidence:
+- `.\infra\k8s\k3d-down.ps1`
+- `.\infra\k8s\k3d-up.ps1`
+- `.\infra\k8s\smoke-check.ps1` passed
+- `.\infra\k8s\order-lifecycle-check.ps1` passed
 
 ## 7. CI and security evidence (green)
 
@@ -128,3 +136,41 @@ Verification status:
 Notes:
 - OWASP step is configured with NVD API key usage and retry/delay hardening for CI stability.
 - Trivy gate passed after Avro update to fixed version (`1.11.4`).
+
+## 8. Observability and alerting baseline (local)
+
+Verification status:
+- `PASS` on local Docker Compose stack (`.\dev-up.ps1`).
+
+Covered:
+- Metrics:
+  - Prometheus endpoint: `http://localhost:9090`
+  - Service `/actuator/prometheus` scraping for gateway and all services.
+- Logs:
+  - Loki readiness: `http://localhost:3100/ready`
+  - Promtail collection from `.logs/*.out.log` and `.logs/*.err.log`
+  - Grafana Explore query verified: `{job="edop-local"}`
+- Dashboard:
+  - Grafana: `http://localhost:3000`
+  - Preloaded dashboard: `Dashboards -> EDOP Local -> EDOP Local Observability`
+  - Panels verified: `HTTP RPS`, `HTTP 5xx Rate`, `HTTP p95 Latency (ms)`, `Recent ERROR Logs`.
+- Alerting:
+  - Alertmanager readiness: `http://localhost:9093/-/ready`
+  - Alert rules present in Prometheus:
+    - `EdopServiceDown`
+    - `EdopHigh5xxRate`
+    - `EdopHighP95Latency`
+
+Evidence:
+- Local verification commands:
+  - `(Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing).StatusCode`
+  - `(Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing).StatusCode`
+  - `(Invoke-WebRequest http://localhost:3000/api/health -UseBasicParsing).StatusCode`
+  - `(Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing).Content`
+  - `Invoke-WebRequest http://localhost:9090/api/v1/rules -UseBasicParsing`
+
+## 9. Remaining acceptance items (outside current baseline)
+
+Still to be finalized against full production-grade acceptance:
+- Extended load/performance validation with explicit SLA/SLO thresholds.
+- External alert routing (e.g., Slack/Email/PagerDuty) and escalation policy.

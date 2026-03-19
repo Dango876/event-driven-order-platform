@@ -32,6 +32,16 @@ Main stack used:
   - safer namespace check for missing namespace
   - Helm deploy retry with diagnostics + infra recovery for `redpanda` and `schema-registry`
   - deployment settings in Helm values/templates to stabilize Redpanda and Schema Registry startup
+- Local observability baseline:
+  - Prometheus + Grafana + Loki + Promtail in Docker Compose
+  - preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`
+  - metrics/logs verification documented in `docs/observability-local-run.md`
+- Local alerting baseline:
+  - Alertmanager service in Docker Compose
+  - Prometheus alert rules:
+    - `EdopServiceDown`
+    - `EdopHigh5xxRate`
+    - `EdopHighP95Latency`
 
 ## 3) Repro steps (k3d + Helm)
 
@@ -70,6 +80,9 @@ From repository root:
 ```powershell
 .\dev-up.ps1
 .\infra\k8s\smoke-check.ps1
+Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing
+Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing
+Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
 .\dev-down.ps1
 ```
 
@@ -77,6 +90,10 @@ From repository root:
 
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/actuator/health`
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- Grafana: `http://localhost:3000`
+- Loki readiness: `http://localhost:3100/ready`
 - API docs via gateway paths:
   - `/api-docs/auth`
   - `/api-docs/user`
@@ -89,6 +106,7 @@ Detailed docs:
 
 - `docs/acceptance-checklist.md`
 - `docs/k3d-helm-local-run.md`
+- `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`
 
@@ -99,11 +117,14 @@ Detailed docs:
 - Swagger/OpenAPI availability via gateway: done
 - End-to-end order lifecycle: done
 - Reproducible verification scripts: done
+- Observability baseline (metrics + logs + dashboard): done
+- Alerting baseline (Prometheus rules + Alertmanager): done
 
 ## 7) Notes
 
 - This is an educational MVP focused on local reproducibility and service integration.
-- Some non-functional enterprise targets from the full specification (full observability stack, security scans in CI gate, strict SLA/SLO load validation) should be treated as next iteration items unless already implemented in CI.
+- Security scans are integrated in CI and currently passing.
+- Remaining next-iteration items are production-grade load/SLO validation and external alert routing integrations.
 
 ## 8) CI/Security evidence
 
