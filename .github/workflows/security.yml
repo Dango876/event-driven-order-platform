@@ -28,19 +28,33 @@ jobs:
           java-version: "17"
           cache: maven
 
+      - name: Validate NVD API key
+        run: |
+          if [ -z "${{ secrets.NVD_API_KEY }}" ]; then
+            echo "NVD_API_KEY is not set. Add repository secret: Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
+
+      - name: Build reactor artifacts (for aggregate scan)
+        run: mvn -B -ntp -U -DskipTests package
+
       - name: OWASP Dependency-Check (fail on CVSS >= 9.0)
-        run: >
-          mvn -B -ntp -U
-          org.owasp:dependency-check-maven:9.0.10:aggregate
-          -Dformat=HTML
-          -Dformat=JSON
-          -DfailBuildOnCVSS=9
+        env:
+          NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+        run: |
+          mvn -B -ntp -U \
+            org.owasp:dependency-check-maven:9.0.10:aggregate \
+            -Dformat=HTML \
+            -Dformat=JSON \
+            -DfailBuildOnCVSS=9 \
+            -DnvdApiKey="$NVD_API_KEY"
 
       - name: Upload OWASP reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: owasp-dependency-check-report
+          if-no-files-found: warn
           path: |
             target/dependency-check-report.html
             target/dependency-check-report.json
@@ -54,48 +68,53 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Trivy FS scan to SARIF (reporting)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: sarif
-          output: trivy-fs.sarif
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "0"
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ghcr.io/aquasecurity/trivy:0.56.1 \
+            fs --severity CRITICAL --ignore-unfixed --format sarif -o trivy-fs.sarif .
 
       - name: Upload Trivy SARIF to GitHub Security
-        if: always()
-        uses: github/codeql-action/upload-sarif@v3
+        if: ${{ always() && hashFiles('trivy-fs.sarif') != '' }}
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-fs.sarif
 
       - name: Trivy FS gate (0 CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          format: table
-          output: trivy-fs.txt
-          severity: CRITICAL
-          ignore-unfixed: true
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ghcr.io/aquasecurity/trivy:0.56.1 \
+            fs --severity CRITICAL --ignore-unfixed --format table . | tee trivy-fs.txt
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ghcr.io/aquasecurity/trivy:0.56.1 \
+            fs --severity CRITICAL --ignore-unfixed --exit-code 1 .
 
       - name: Trivy Config gate (0 CRITICAL)
-        uses: aquasecurity/trivy-action@0.28.0
-        with:
-          scan-type: config
-          scan-ref: .
-          format: table
-          output: trivy-config.txt
-          severity: CRITICAL
-          exit-code: "1"
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ghcr.io/aquasecurity/trivy:0.56.1 \
+            config --severity CRITICAL --format table . | tee trivy-config.txt
+
+          docker run --rm \
+            -v "${{ github.workspace }}:/workspace" \
+            -w /workspace \
+            ghcr.io/aquasecurity/trivy:0.56.1 \
+            config --severity CRITICAL --exit-code 1 .
 
       - name: Upload Trivy text reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: trivy-reports
+          if-no-files-found: warn
           path: |
             trivy-fs.txt
             trivy-config.txt
