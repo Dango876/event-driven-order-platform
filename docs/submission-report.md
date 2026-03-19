@@ -154,10 +154,11 @@ Detailed docs:
 
 ## 8) CI/Security evidence
 
-- CI (green): https://github.com/Dango876/event-driven-order-platform/actions/runs/23296018313
-- Security Scan (green, latest workflow view): https://github.com/Dango876/event-driven-order-platform/actions/workflows/security.yml
+- CI (green): https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850628
+- Security Scan (green, latest workflow view): https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850635
 - CD workflow definition: `.github/workflows/cd.yml`
 - Deploy prerequisites for CD stages:
   - `KUBE_CONFIG_DEV` secret for dev Helm release
   - `KUBE_CONFIG_PROD` secret for prod Helm release
   - GitHub `prod` environment reviewers for manual approval gate
+

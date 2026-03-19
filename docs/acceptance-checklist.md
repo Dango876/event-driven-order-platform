@@ -131,8 +131,8 @@ Evidence:
 
 Verification status:
 - `PASS` for CI workflow and security workflow.
-- CI (green): `https://github.com/Dango876/event-driven-order-platform/actions/runs/23296018313`
-- Security Scan (green, latest workflow view): `https://github.com/Dango876/event-driven-order-platform/actions/workflows/security.yml`
+- CI (green): `https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850628`
+- Security Scan (green, latest workflow view): `https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850635`
 
 Notes:
 - OWASP step is configured with NVD API key usage and retry/delay hardening for CI stability.
@@ -225,3 +225,4 @@ Config:
 Still to be finalized against full production-grade acceptance:
 - Extended multi-scenario load/performance validation (beyond local baseline), with documented long-run SLA/SLO envelopes.
 - Production alert routing governance (on-call schedule/escalation policy and receiver hardening).
+
