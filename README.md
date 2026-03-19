@@ -26,6 +26,7 @@ Expected result:
 - Gateway is available at `http://localhost:8080`.
 - Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 - Prometheus is available at `http://localhost:9090`.
+- Loki is available at `http://localhost:3100/ready`.
 - Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
 
 ## Stop local stack

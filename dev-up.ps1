@@ -87,6 +87,32 @@ function Wait-HealthEndpoint {
     throw "$Name health endpoint is not UP: $Url"
 }
 
+function Wait-HttpStatus {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Url,
+        [int]$ExpectedStatusCode = 200,
+        [int]$TimeoutSec = 180
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $resp = Invoke-WebRequest -Uri $Url -UseBasicParsing -TimeoutSec 3
+            if ($null -ne $resp -and $resp.StatusCode -eq $ExpectedStatusCode) {
+                Write-Host "[OK] $Name is ready"
+                return
+            }
+        }
+        catch {
+        }
+
+        Start-Sleep -Seconds 2
+    }
+
+    throw "$Name is not ready: $Url"
+}
+
 function Get-ListeningProcessId {
     param(
         [Parameter(Mandatory = $true)][int]$Port
@@ -122,7 +148,8 @@ $infraPorts = @(
     @{ Name = "MongoDB"; Port = 27018 },
     @{ Name = "Redis"; Port = 6379 },
     @{ Name = "Prometheus"; Port = 9090 },
-    @{ Name = "Grafana"; Port = 3000 }
+    @{ Name = "Grafana"; Port = 3000 },
+    @{ Name = "Loki"; Port = 3100 }
 )
 
 Write-Host "Starting infra containers..."
@@ -151,6 +178,10 @@ if ($LASTEXITCODE -ne 0) {
 foreach ($p in $infraPorts) {
     Wait-TcpPort -Name $p.Name -Port $p.Port -TimeoutSec 120
 }
+
+Wait-HttpStatus -Name "Prometheus readiness" -Url "http://localhost:9090/-/ready" -ExpectedStatusCode 200 -TimeoutSec 120
+Wait-HttpStatus -Name "Grafana health" -Url "http://localhost:3000/api/health" -ExpectedStatusCode 200 -TimeoutSec 120
+Wait-HttpStatus -Name "Loki readiness" -Url "http://localhost:3100/ready" -ExpectedStatusCode 200 -TimeoutSec 120
 
 $services = @(
     @{ Name = "auth-service";         Port = 8081; Pom = "services/auth-service/pom.xml";         Health = "http://localhost:8081/actuator/health" },
