@@ -4,6 +4,8 @@ param(
     [int]$GatewayHostPort = 8080,
     [int]$ApiHostPort = 6550,
     [int]$HelmTimeoutMinutes = 30,
+    [int]$ImageBuildRetries = 3,
+    [int]$ImageBuildRetryDelaySec = 20,
     [switch]$ImportInfraImages
 )
 
@@ -211,6 +213,47 @@ function Ensure-NamespaceReady {
     }
 }
 
+function Ensure-DockerImage {
+    param([Parameter(Mandatory = $true)][string]$Image)
+
+    & docker image inspect $Image *> $null
+    if ($LASTEXITCODE -eq 0) {
+        return
+    }
+
+    Write-Host "Pulling helper image $Image ..."
+    & docker pull $Image
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to pull helper image: $Image"
+    }
+}
+
+function Build-ServiceImageWithRetry {
+    param(
+        [Parameter(Mandatory = $true)][string]$ServiceName,
+        [Parameter(Mandatory = $true)][string]$DockerfilePath,
+        [Parameter(Mandatory = $true)][string]$ContextPath,
+        [Parameter(Mandatory = $true)][string]$ImageTag,
+        [int]$Retries = 3,
+        [int]$DelaySec = 20
+    )
+
+    for ($attempt = 1; $attempt -le $Retries; $attempt++) {
+        Write-Host "Building image $ImageTag (attempt $attempt/$Retries) ..."
+        & docker build --provenance=false -f $DockerfilePath -t $ImageTag $ContextPath
+        if ($LASTEXITCODE -eq 0) {
+            return
+        }
+
+        if ($attempt -lt $Retries) {
+            Write-Host "docker build failed for $ServiceName. Retrying in $DelaySec sec..."
+            Start-Sleep -Seconds $DelaySec
+        }
+    }
+
+    throw "docker build failed for $ServiceName after $Retries attempts"
+}
+
 Require-Command -Name "docker"
 Require-Command -Name "k3d"
 Require-Command -Name "kubectl"
@@ -253,6 +296,16 @@ else {
 
 Set-K3dAioLimit -Name $ClusterName
 
+Write-Host "Ensuring Docker build helper images are available..."
+$builderImages = @(
+    "docker/dockerfile:1.7",
+    "maven:3.9.9-eclipse-temurin-17",
+    "eclipse-temurin:17-jre"
+)
+foreach ($builderImage in $builderImages) {
+    Ensure-DockerImage -Image $builderImage
+}
+
 $serviceNames = @(
     "api-gateway",
     "auth-service",
@@ -294,11 +347,13 @@ foreach ($serviceName in $serviceNames) {
     }
 
     $imageTag = "edop/{0}:dev" -f $serviceName
-    Write-Host "Building image $imageTag ..."
-    & docker build --provenance=false -f $dockerfilePath -t $imageTag $root
-    if ($LASTEXITCODE -ne 0) {
-        throw "docker build failed for $serviceName"
-    }
+    Build-ServiceImageWithRetry `
+        -ServiceName $serviceName `
+        -DockerfilePath $dockerfilePath `
+        -ContextPath $root `
+        -ImageTag $imageTag `
+        -Retries $ImageBuildRetries `
+        -DelaySec $ImageBuildRetryDelaySec
 }
 
 $images = @()
