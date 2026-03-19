@@ -75,4 +75,5 @@ make dev-down
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
+- `docs/project-passport.md`
 - `docs/swagger-openapi-endpoints.md`
