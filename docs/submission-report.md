@@ -42,6 +42,10 @@ Main stack used:
     - `EdopServiceDown`
     - `EdopHigh5xxRate`
     - `EdopHighP95Latency`
+- Load/SLO baseline tooling:
+  - k6 scenario: `infra/performance/k6-gateway-baseline.js`
+  - run helper: `infra/performance/run-load-baseline.ps1`
+  - baseline guide: `docs/load-slo-baseline.md`
 
 ## 3) Repro steps (k3d + Helm)
 
@@ -106,6 +110,7 @@ Detailed docs:
 
 - `docs/acceptance-checklist.md`
 - `docs/k3d-helm-local-run.md`
+- `docs/load-slo-baseline.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`

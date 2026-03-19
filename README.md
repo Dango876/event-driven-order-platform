@@ -57,10 +57,17 @@ make dev-down
 .\infra\k8s\order-lifecycle-check.ps1
 ```
 
+## Load/SLO baseline
+
+```powershell
+.\infra\performance\run-load-baseline.ps1
+```
+
 ## Additional docs
 
 - `docs/acceptance-checklist.md`
 - `docs/k3d-helm-local-run.md`
+- `docs/load-slo-baseline.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`
