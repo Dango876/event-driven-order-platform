@@ -113,6 +113,7 @@ Covered by evidence above:
 - Gateway + service docs/health reachable.
 - Build/test command succeeds.
 - End-to-end order lifecycle baseline passes.
+- `user-service` exposes CRUD-style user management endpoints (`GET/POST/PUT/DELETE /users`).
 - Observability and alerting baseline is available and verified locally.
 
 ## 6. Kubernetes acceptance artifact (k3d + Helm)
@@ -136,6 +137,15 @@ Verification status:
 Notes:
 - OWASP step is configured with NVD API key usage and retry/delay hardening for CI stability.
 - Trivy gate passed after Avro update to fixed version (`1.11.4`).
+- CI includes API integration coverage with Testcontainers + WebTestClient:
+  - `services/order-service/src/test/java/com/procurehub/order/api/OrderLifecycleWebTestClientIT.java`
+  - `services/order-service/pom.xml` includes `**/*IT.java` in Surefire test includes.
+- CD baseline workflow is defined in:
+  - `.github/workflows/cd.yml`
+  - stages: Docker build/push to GHCR -> Helm release to `edop-dev` -> manual approval gate (`prod` environment) -> Helm release to `edop-prod`.
+  - required repository secrets for deploy stages:
+    - `KUBE_CONFIG_DEV`
+    - `KUBE_CONFIG_PROD`
 
 ## 8. Observability and alerting baseline (local)
 
@@ -146,6 +156,9 @@ Covered:
 - Metrics:
   - Prometheus endpoint: `http://localhost:9090`
   - Service `/actuator/prometheus` scraping for gateway and all services.
+- Tracing:
+  - Jaeger UI: `http://localhost:16686`
+  - OTLP endpoint for services: `http://localhost:4318/v1/traces`
 - Logs:
   - Loki readiness: `http://localhost:3100/ready`
   - Promtail collection from `.logs/*.out.log` and `.logs/*.err.log`
@@ -167,6 +180,7 @@ Evidence:
 - Local verification commands:
   - `(Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing).StatusCode`
+  - `(Invoke-WebRequest http://localhost:16686 -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:8088 -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3000/api/health -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing).Content`
@@ -185,7 +199,28 @@ Evidence:
   - `checks pass rate`: `100%` (`PASS`, threshold `> 99%`)
   - request rate baseline: `~128.82 req/s`
 
-## 10. Remaining acceptance items (outside current baseline)
+## 10. Notification rate-limiting baseline (Redis leaky bucket)
+
+Verification status:
+- `PASS` for implementation baseline (`notification-service`).
+
+Covered:
+- Redis-backed leaky bucket per user:
+  - bucket level leaks over time (`leak-per-second`), capacity-limited.
+  - when capacity is exceeded, notification delivery is skipped and logged as warning.
+- `order.created` events:
+  - store `orderId -> userId` mapping in Redis and apply user bucket immediately.
+- `order.status-changed` events:
+  - resolve `userId` via `orderId` mapping and apply user bucket.
+  - fallback bucket by `orderId` if mapping is unavailable.
+
+Config:
+- `NOTIFICATION_RATE_LIMIT_ENABLED` (default `true`)
+- `NOTIFICATION_RATE_LIMIT_CAPACITY` (default `20`)
+- `NOTIFICATION_RATE_LIMIT_LEAK_PER_SECOND` (default `5`)
+- `REDIS_HOST` / `REDIS_PORT`
+
+## 11. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
 - Extended multi-scenario load/performance validation (beyond local baseline), with documented long-run SLA/SLO envelopes.

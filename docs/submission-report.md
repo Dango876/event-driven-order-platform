@@ -24,6 +24,10 @@ Main stack used:
 - Local one-command startup for Docker Compose:
   - `./dev-up.ps1`
   - `./dev-down.ps1`
+- User management API baseline in `user-service`:
+  - list/get by id
+  - create/update/delete
+  - filters by `email` and `role`
 - Local Kubernetes startup for k3d + Helm:
   - `./infra/k8s/k3d-up.ps1`
   - `./infra/k8s/k3d-down.ps1`
@@ -33,9 +37,10 @@ Main stack used:
   - Helm deploy retry with diagnostics + infra recovery for `redpanda` and `schema-registry`
   - deployment settings in Helm values/templates to stabilize Redpanda and Schema Registry startup
 - Local observability baseline:
-  - Prometheus + Grafana + Loki + Promtail in Docker Compose
+  - Prometheus + Grafana + Loki + Promtail + Jaeger in Docker Compose
   - preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`
   - metrics/logs verification documented in `docs/observability-local-run.md`
+  - tracing export via OTLP to Jaeger (`http://localhost:4318/v1/traces`)
 - Local alerting baseline:
   - Alertmanager service in Docker Compose
   - external webhook routing via `ALERT_WEBHOOK_URL` (default local sink on `http://localhost:8088`)
@@ -43,10 +48,17 @@ Main stack used:
     - `EdopServiceDown`
     - `EdopHigh5xxRate`
     - `EdopHighP95Latency`
+- Notification rate limiting baseline (Redis leaky bucket):
+  - `notification-service` uses Redis-backed leaky bucket for per-user notification throttling
+  - `orderId -> userId` mapping is cached in Redis to apply user-level limits for status-change events
 - Load/SLO baseline tooling:
   - k6 scenario: `infra/performance/k6-gateway-baseline.js`
   - run helper: `infra/performance/run-load-baseline.ps1`
   - baseline guide: `docs/load-slo-baseline.md`
+- CI/CD pipeline baseline:
+  - CI executes unit tests and API integration test with Testcontainers + WebTestClient (`OrderLifecycleWebTestClientIT`).
+  - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
+  - CD deploy path: Helm release to `edop-dev` and (with manual approval) to `edop-prod`.
 
 ## 3) Repro steps (k3d + Helm)
 
@@ -100,6 +112,7 @@ Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
 - Alert webhook sink: `http://localhost:8088`
 - Grafana: `http://localhost:3000`
 - Loki readiness: `http://localhost:3100/ready`
+- Jaeger UI: `http://localhost:16686`
 - API docs via gateway paths:
   - `/api-docs/auth`
   - `/api-docs/user`
@@ -114,6 +127,7 @@ Detailed docs:
 - `docs/alert-routing.md`
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
+- `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`
@@ -129,6 +143,8 @@ Detailed docs:
 - Alerting baseline (Prometheus rules + Alertmanager): done
 - External webhook alert routing baseline: done
 - Load/SLO baseline tooling and local run: done
+- CI API integration test baseline (Testcontainers + WebTestClient): done
+- CD workflow baseline (build/push + Helm dev/prod path): done
 
 ## 7) Notes
 
@@ -140,3 +156,8 @@ Detailed docs:
 
 - CI (green): https://github.com/Dango876/event-driven-order-platform/actions/runs/23296018313
 - Security Scan (green, latest workflow view): https://github.com/Dango876/event-driven-order-platform/actions/workflows/security.yml
+- CD workflow definition: `.github/workflows/cd.yml`
+- Deploy prerequisites for CD stages:
+  - `KUBE_CONFIG_DEV` secret for dev Helm release
+  - `KUBE_CONFIG_PROD` secret for prod Helm release
+  - GitHub `prod` environment reviewers for manual approval gate

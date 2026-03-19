@@ -33,7 +33,7 @@ jobs:
           -Dcheckstyle.consoleOutput=true
           -Dcheckstyle.failOnViolation=true
 
-      - name: Unit/Integration Tests
+      - name: Unit/Integration Tests (includes Testcontainers + WebTestClient API IT)
         run: mvn -B -ntp -U test
 
       - name: JaCoCo report (order-service)
