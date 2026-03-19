@@ -1,0 +1,43 @@
+groups:
+  - name: edop-service-alerts
+    rules:
+      - alert: EdopServiceDown
+        expr: up{job=~"api-gateway|auth-service|user-service|product-service|inventory-service|order-service|notification-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "Prometheus target for {{ $labels.job }} is down for more than 1 minute."
+
+      - alert: EdopHigh5xxRate
+        expr: |
+          (
+            sum by (job) (rate(http_server_requests_seconds_count{job=~"api-gateway|auth-service|user-service|product-service|inventory-service|order-service|notification-service",status=~"5.."}[5m]))
+            /
+            clamp_min(sum by (job) (rate(http_server_requests_seconds_count{job=~"api-gateway|auth-service|user-service|product-service|inventory-service|order-service|notification-service"}[5m])), 0.001)
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High 5xx rate for {{ $labels.job }}"
+          description: "5xx ratio is above 5% for at least 5 minutes."
+
+      - alert: EdopHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (job, le) (
+              rate(http_server_requests_seconds_bucket{job=~"api-gateway|auth-service|user-service|product-service|inventory-service|order-service|notification-service"}[5m])
+            )
+          ) > 1.5
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High p95 latency for {{ $labels.job }}"
+          description: "p95 latency is above 1.5 seconds for at least 5 minutes."

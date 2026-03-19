@@ -21,11 +21,12 @@ make dev-up
 ```
 
 Expected result:
-- Infra containers are up (Redpanda, Schema Registry, Postgres, MongoDB, Redis).
+- Infra containers are up (Redpanda, Schema Registry, Postgres, MongoDB, Redis, Prometheus, Alertmanager, Grafana, Loki, Promtail).
 - Services are healthy.
 - Gateway is available at `http://localhost:8080`.
 - Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
 - Prometheus is available at `http://localhost:9090`.
+- Alertmanager is available at `http://localhost:9093`.
 - Loki is available at `http://localhost:3100/ready`.
 - Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
 - Preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`.
