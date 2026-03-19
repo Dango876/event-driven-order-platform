@@ -6,7 +6,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 1: project skeleton, CI baseline, Docker/Helm basics, runnable services.
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 
-Date of latest verification: 2026-03-18 (Europe/Moscow).
+Date of latest verification: 2026-03-19 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -116,6 +116,15 @@ Covered by evidence above:
 ## 6. Remaining acceptance items (outside Week 1/2 closure)
 
 Still to be finalized later against full project acceptance:
-- Security scanning target (`OWASP Dependency-Check + Trivy`, 0 critical).
-- CI quality gates (including coverage target) in final pipeline form.
 - Stable repeatable Kubernetes acceptance run (k3d + Helm) as final check artifact.
+
+## 7. CI and security evidence (green)
+
+Verification status:
+- `PASS` for CI workflow and security workflow.
+- CI (green): `https://github.com/Dango876/event-driven-order-platform/actions/runs/23289711107`
+- Security Scan (green): `https://github.com/Dango876/event-driven-order-platform/actions/runs/23291101639`
+
+Notes:
+- OWASP step is configured with NVD API key usage and retry/delay hardening for CI stability.
+- Trivy gate passed after Avro update to fixed version (`1.11.4`).
