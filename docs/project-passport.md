@@ -43,6 +43,10 @@ Core stack:
   - k6 `constant-arrival-rate` profile for 500 RPS target with p95/error thresholds and exported artifact.
 - TLS + secrets k8s baseline:
   - optional gateway ingress TLS (TLS 1.3 policy annotations), optional TLS secret upsert in CD, and optional pod secret wiring.
+- Kubernetes scaling/availability baseline:
+  - rolling update defaults with `maxUnavailable: 0` + `maxSurge: 1`
+  - HPA baseline (`min=2`, `max=4`) for production CD profile
+  - PDB baseline for application workloads
 - CI/CD baseline:
   - CI + Security workflows green.
   - CD workflow defined in `.github/workflows/cd.yml`.
@@ -62,6 +66,7 @@ Detailed acceptance evidence:
 - `docs/observability-local-run.md`
 - `docs/ci-cd-pipeline.md`
 - `docs/tls-secrets-k8s-baseline.md`
+- `docs/k8s-scaling-availability-baseline.md`
 
 ## 4) Quick reproduce
 
@@ -80,6 +85,7 @@ Detailed acceptance evidence:
 - CI/Security baseline: completed and green.
 - Local deploy/repro and observability baseline: completed.
 - K8s TLS/secrets deployment baseline: completed.
+- K8s scaling + no-downtime rollout baseline: completed.
 
 ## 6) Remaining production-hardening items (not blocking MVP)
 

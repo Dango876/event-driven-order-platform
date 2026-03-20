@@ -70,6 +70,11 @@ Main stack used:
   - optional ingress TLS for `api-gateway` in Helm chart
   - optional TLS secret upsert in CD from GitHub Secrets
   - optional `envFromSecrets` wiring in deployment template
+- Kubernetes scaling/availability baseline:
+  - default rolling strategy for applications (`maxUnavailable: 0`, `maxSurge: 1`)
+  - HPA template baseline (`autoscaling/v2`)
+  - PDB template baseline (`policy/v1`)
+  - prod CD profile enables autoscaling/PDB and starts applications with 2 replicas
 - CI/CD pipeline baseline:
   - CI executes unit tests and API integration test with Testcontainers + WebTestClient (`OrderLifecycleWebTestClientIT`).
   - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
@@ -143,6 +148,7 @@ Detailed docs:
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
 - `docs/performance-sla-validation.md`
+- `docs/k8s-scaling-availability-baseline.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
@@ -161,6 +167,7 @@ Detailed docs:
 - External webhook alert routing baseline: done
 - Load/SLO baseline tooling and local run: done
 - TLS/secrets k8s deployment baseline: done
+- Kubernetes scaling + no-downtime rollout baseline: done
 - CI API integration test baseline (Testcontainers + WebTestClient): done
 - CD workflow baseline (build/push + Helm dev/prod path): done
 

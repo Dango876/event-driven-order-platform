@@ -1,0 +1,65 @@
+{{- range $app := .Values.applications }}
+{{- if $app.enabled }}
+{{- $autoscalingEnabled := default false $.Values.autoscalingDefaults.enabled -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "enabled") -}}
+{{- $autoscalingEnabled = $app.autoscaling.enabled -}}
+{{- end -}}
+{{- if $autoscalingEnabled }}
+{{- $minReplicas := default 2 $.Values.autoscalingDefaults.minReplicas -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "minReplicas") -}}
+{{- $minReplicas = $app.autoscaling.minReplicas -}}
+{{- end -}}
+{{- $maxReplicas := default 4 $.Values.autoscalingDefaults.maxReplicas -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "maxReplicas") -}}
+{{- $maxReplicas = $app.autoscaling.maxReplicas -}}
+{{- end -}}
+{{- $cpuTarget := default 70 $.Values.autoscalingDefaults.targetCPUUtilizationPercentage -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "targetCPUUtilizationPercentage") -}}
+{{- $cpuTarget = $app.autoscaling.targetCPUUtilizationPercentage -}}
+{{- end -}}
+{{- $memoryTarget := default nil $.Values.autoscalingDefaults.targetMemoryUtilizationPercentage -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "targetMemoryUtilizationPercentage") -}}
+{{- $memoryTarget = $app.autoscaling.targetMemoryUtilizationPercentage -}}
+{{- end -}}
+{{- $behavior := default (dict) $.Values.autoscalingDefaults.behavior -}}
+{{- if and (hasKey $app "autoscaling") (hasKey $app.autoscaling "behavior") -}}
+{{- $behavior = $app.autoscaling.behavior -}}
+{{- end -}}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $app.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $app.name }}
+    app.kubernetes.io/component: application
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $app.name }}
+  minReplicas: {{ $minReplicas }}
+  maxReplicas: {{ $maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ $cpuTarget }}
+    {{- if $memoryTarget }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ $memoryTarget }}
+    {{- end }}
+  {{- if $behavior }}
+  behavior:
+    {{- toYaml $behavior | nindent 4 }}
+  {{ end }}
+{{ end }}
+{{ end }}
+{{ end }}

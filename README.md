@@ -77,6 +77,7 @@ make dev-down
 - `docs/alert-routing.md`
 - `docs/ci-cd-pipeline.md`
 - `docs/k3d-helm-local-run.md`
+- `docs/k8s-scaling-availability-baseline.md`
 - `docs/load-slo-baseline.md`
 - `docs/performance-sla-validation.md`
 - `docs/redis-distributed-locks.md`

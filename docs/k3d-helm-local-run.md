@@ -38,6 +38,7 @@ What this does:
 - deploys infra + services with Helm chart `infra/helm/edop`
 - exposes API Gateway on `http://localhost:8080`
 - keeps ingress TLS disabled by default for local k3d baseline
+- keeps HPA/PDB disabled by default in local baseline (enabled in prod CD profile)
 
 ## 3. Validate deployment
 

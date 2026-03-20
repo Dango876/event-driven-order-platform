@@ -1,0 +1,36 @@
+{{- range $app := .Values.applications }}
+{{- if $app.enabled }}
+{{- $pdbEnabled := default false $.Values.pdbDefaults.enabled -}}
+{{- if and (hasKey $app "pdb") (hasKey $app.pdb "enabled") -}}
+{{- $pdbEnabled = $app.pdb.enabled -}}
+{{- end -}}
+{{- if $pdbEnabled }}
+{{- $minAvailable := default "1" $.Values.pdbDefaults.minAvailable -}}
+{{- if and (hasKey $app "pdb") (hasKey $app.pdb "minAvailable") -}}
+{{- $minAvailable = $app.pdb.minAvailable -}}
+{{- end -}}
+{{- $maxUnavailable := default nil $.Values.pdbDefaults.maxUnavailable -}}
+{{- if and (hasKey $app "pdb") (hasKey $app.pdb "maxUnavailable") -}}
+{{- $maxUnavailable = $app.pdb.maxUnavailable -}}
+{{- end -}}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $app.name }}
+  labels:
+    {{- include "edop.commonLabels" $ | nindent 4 }}
+    app.kubernetes.io/name: {{ $app.name }}
+    app.kubernetes.io/component: application
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $app.name }}
+  {{- if $maxUnavailable }}
+  maxUnavailable: {{ $maxUnavailable | quote }}
+  {{- else }}
+  minAvailable: {{ $minAvailable | quote }}
+  {{ end }}
+{{ end }}
+{{ end }}
+{{ end }}

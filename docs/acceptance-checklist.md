@@ -282,13 +282,39 @@ Covered:
   - `InventoryServiceDistributedLockTest`
 
 Evidence:
-- `services/inventory-service/src/main/java/com/procurenhub/inventory/service/RedisDistributedLockService.java`
-- `services/inventory-service/src/main/java/com/procurenhub/inventory/service/InventoryService.java`
-- `services/inventory-service/src/main/java/com/procurenhub/inventory/api/error/GlobalExceptionHandler.java`
-- `services/inventory-service/src/test/java/com/procurenhub/inventory/service/InventoryServiceDistributedLockTest.java`
+- `services/inventory-service/src/main/java/com/procurehub/inventory/service/RedisDistributedLockService.java`
+- `services/inventory-service/src/main/java/com/procurehub/inventory/service/InventoryService.java`
+- `services/inventory-service/src/main/java/com/procurehub/inventory/api/error/GlobalExceptionHandler.java`
+- `services/inventory-service/src/test/java/com/procurehub/inventory/service/InventoryServiceDistributedLockTest.java`
 - `docs/redis-distributed-locks.md`
 
-## 14. Remaining acceptance items (outside current baseline)
+## 14. Kubernetes scaling + no-downtime rollout baseline
+
+Verification status:
+- `PASS` for implementation baseline in Helm + CD production wiring.
+
+Covered:
+- Default rolling strategy for applications:
+  - `RollingUpdate`
+  - `maxUnavailable: 0`
+  - `maxSurge: 1`
+  - rollout safety defaults (`minReadySeconds`, `progressDeadlineSeconds`, `revisionHistoryLimit`)
+- HPA template (`autoscaling/v2`) for applications with default target profile:
+  - `minReplicas: 2`
+  - `maxReplicas: 4`
+  - CPU target utilization
+- PDB template (`policy/v1`) for applications (`minAvailable` baseline).
+- CD `deploy-prod` enables autoscaling + PDB baseline and sets initial replicas to `2` for all applications.
+
+Evidence:
+- `infra/helm/edop/templates/deployments.yaml`
+- `infra/helm/edop/templates/hpa.yaml`
+- `infra/helm/edop/templates/pdb.yaml`
+- `infra/helm/edop/values.yaml`
+- `.github/workflows/cd.yml`
+- `docs/k8s-scaling-availability-baseline.md`
+
+## 15. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
 - Extended long-run/multi-scenario load evidence (archive SLA profile artifacts from k8s-like runs).

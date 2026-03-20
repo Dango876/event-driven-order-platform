@@ -24,7 +24,11 @@ CI pipeline includes:
 CD pipeline stages:
 1. Build and push Docker images for all services to GHCR.
 2. Helm deploy to `edop-dev` namespace (when `KUBE_CONFIG_DEV` is configured).
-3. Helm deploy to `edop-prod` namespace after manual approval through GitHub `prod` environment (when `KUBE_CONFIG_PROD` is configured).
+3. Helm deploy to `edop-prod` namespace after manual approval through GitHub `prod` environment (when `KUBE_CONFIG_PROD` is configured):
+   - ingress TLS enabled,
+   - autoscaling baseline enabled (`minReplicas=2`, `maxReplicas=4`),
+   - PDB baseline enabled,
+   - initial replicas set to `2` for all application deployments.
 4. (Optional) Upsert TLS secret for gateway ingress from GitHub Secrets.
 
 ## Required repository setup
@@ -47,3 +51,4 @@ Optional:
 - CD deploy jobs are skipped when corresponding kubeconfig secret is not present.
 - Helm chart path used by CD: `infra/helm/edop`.
 - Prod deploy enables ingress TLS in chart values and uses secret `edop-gateway-tls`.
+- Prod deploy also enables HPA/PDB scaling baseline for availability and no-downtime rolling updates.

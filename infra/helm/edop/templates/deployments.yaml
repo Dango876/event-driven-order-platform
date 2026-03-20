@@ -98,9 +98,17 @@ metadata:
     app.kubernetes.io/component: application
 spec:
   replicas: {{ default 1 $app.replicas }}
+  {{- if default true $.Values.rolloutDefaults.enabled }}
+  revisionHistoryLimit: {{ default 5 $.Values.rolloutDefaults.revisionHistoryLimit }}
+  progressDeadlineSeconds: {{ default 600 $.Values.rolloutDefaults.progressDeadlineSeconds }}
+  minReadySeconds: {{ default 5 $.Values.rolloutDefaults.minReadySeconds }}
+  {{- end }}
   {{- if $app.strategy }}
   strategy:
     {{- toYaml $app.strategy | nindent 4 }}
+  {{- else if default true $.Values.rolloutDefaults.enabled }}
+  strategy:
+    {{- toYaml $.Values.rolloutDefaults.strategy | nindent 4 }}
   {{- end }}
   selector:
     matchLabels:
@@ -157,6 +165,13 @@ spec:
                 optional: {{ default false $secretRef.optional }}
             {{- end }}
             {{- end }}
+          {{- end }}
+          {{- if $app.resources }}
+          resources:
+            {{- toYaml $app.resources | nindent 12 }}
+          {{- else if $.Values.resourcesDefaults.applications }}
+          resources:
+            {{- toYaml $.Values.resourcesDefaults.applications | nindent 12 }}
           {{- end }}
           {{- if $app.probes }}
           livenessProbe:
