@@ -71,6 +71,12 @@ make dev-down
 .\infra\performance\run-sla-validation.ps1
 ```
 
+## SLA evidence profile (k8s-like, archived artifacts)
+
+```powershell
+.\infra\performance\run-sla-k8s-evidence.ps1
+```
+
 ## Additional docs
 
 - `docs/acceptance-checklist.md`
@@ -80,6 +86,7 @@ make dev-down
 - `docs/k8s-scaling-availability-baseline.md`
 - `docs/load-slo-baseline.md`
 - `docs/performance-sla-validation.md`
+- `docs/performance-sla-k8s-evidence.md`
 - `docs/redis-distributed-locks.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`

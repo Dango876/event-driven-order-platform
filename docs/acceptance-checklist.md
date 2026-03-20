@@ -205,6 +205,8 @@ Additional SLA profile tooling:
 - `infra/performance/k6-gateway-sla.js`
 - `infra/performance/run-sla-validation.ps1`
 - `docs/performance-sla-validation.md`
+- `infra/performance/run-sla-k8s-evidence.ps1`
+- `docs/performance-sla-k8s-evidence.md`
 
 SLA profile evidence (`-Duration 5m -TargetRps 500`):
 - request rate: `499.42 req/s` (`PASS`, >= 95% of target)
@@ -317,6 +319,8 @@ Evidence:
 ## 15. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
-- Extended long-run/multi-scenario load evidence (archive SLA profile artifacts from k8s-like runs).
+- Execute long-run SLA profile on k3d and attach archived evidence:
+  - command: `.\infra\performance\run-sla-k8s-evidence.ps1 -Duration 10m -TargetRps 500`
+  - artifact directory: `infra/performance/evidence/`
 - Operational on-call process rollout (schedule ownership/escalation policy with real receivers).
 

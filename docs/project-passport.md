@@ -67,6 +67,7 @@ Detailed acceptance evidence:
 - `docs/ci-cd-pipeline.md`
 - `docs/tls-secrets-k8s-baseline.md`
 - `docs/k8s-scaling-availability-baseline.md`
+- `docs/performance-sla-k8s-evidence.md`
 
 ## 4) Quick reproduce
 
@@ -89,6 +90,7 @@ Detailed acceptance evidence:
 
 ## 6) Remaining production-hardening items (not blocking MVP)
 
-- Long-run load/perf validation evidence in k8s-like environment (with archived SLA reports per run).
+- Execute and attach archived long-run SLA evidence from k3d profile:
+  - `.\infra\performance\run-sla-k8s-evidence.ps1`
 - On-call governance rollout (real receiver integrations, escalation calendar ownership, runbooks).
 - Optional stretch features from plan (advanced rate-limit tuning, etc.).

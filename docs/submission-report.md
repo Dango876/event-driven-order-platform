@@ -148,6 +148,7 @@ Detailed docs:
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
 - `docs/performance-sla-validation.md`
+- `docs/performance-sla-k8s-evidence.md`
 - `docs/k8s-scaling-availability-baseline.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
@@ -175,7 +176,10 @@ Detailed docs:
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
-- Remaining next-iteration items are long-run SLA evidence collection in k8s-like environment and operational on-call process rollout.
+- Long-run SLA evidence can now be generated in k3d profile via:
+  - `.\infra\performance\run-sla-k8s-evidence.ps1`
+  - artifacts are archived under `infra/performance/evidence/`
+- Remaining next-iteration item is operational on-call process rollout.
 
 ## 8) CI/Security evidence
 

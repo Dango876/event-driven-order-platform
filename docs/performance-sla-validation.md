@@ -49,6 +49,8 @@ Profile uses `constant-arrival-rate` to target fixed RPS.
 - k6 profile: `infra/performance/k6-gateway-sla.js`
 - run helper: `infra/performance/run-sla-validation.ps1`
 - exported summary: `infra/performance/k6-sla-summary.json`
+- k8s-like archived evidence helper: `infra/performance/run-sla-k8s-evidence.ps1`
+- k8s-like evidence guide: `docs/performance-sla-k8s-evidence.md`
 
 ## Notes
 

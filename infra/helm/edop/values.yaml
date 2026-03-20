@@ -15,11 +15,11 @@ rolloutDefaults:
 resourcesDefaults:
   applications:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 200m
+      memory: 384Mi
     limits:
-      cpu: 500m
-      memory: 512Mi
+      cpu: 1000m
+      memory: 1Gi
 
 autoscalingDefaults:
   enabled: false
@@ -220,17 +220,22 @@ infrastructure:
     containerPorts:
       - name: ui
         containerPort: 16686
-      - name: otlp
+      - name: otlp-grpc
         containerPort: 4317
+      - name: otlp-http
+        containerPort: 4318
     service:
       type: ClusterIP
       ports:
         - name: ui
           port: 16686
           targetPort: 16686
-        - name: otlp
+        - name: otlp-grpc
           port: 4317
           targetPort: 4317
+        - name: otlp-http
+          port: 4318
+          targetPort: 4318
     probes:
       httpPath: /
       httpPort: 16686
@@ -291,7 +296,7 @@ applications:
   - name: product-service
     enabled: true
     image: edop/product-service:dev
-    replicas: 1
+    replicas: 2
     containerPorts:
       - name: http
         containerPort: 8083
@@ -345,7 +350,7 @@ applications:
   - name: order-service
     enabled: true
     image: edop/order-service:dev
-    replicas: 1
+    replicas: 2
     containerPorts:
       - name: http
         containerPort: 8086
@@ -394,7 +399,7 @@ applications:
   - name: api-gateway
     enabled: true
     image: edop/api-gateway:dev
-    replicas: 1
+    replicas: 2
     containerPorts:
       - name: http
         containerPort: 8080

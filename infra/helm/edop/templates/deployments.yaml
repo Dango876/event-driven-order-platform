@@ -68,8 +68,10 @@ spec:
             tcpSocket:
               port: {{ $component.probes.tcpPort }}
             {{- end }}
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            initialDelaySeconds: {{ default 20 $component.probes.livenessInitialDelaySeconds }}
+            periodSeconds: {{ default 10 $component.probes.livenessPeriodSeconds }}
+            timeoutSeconds: {{ default 3 $component.probes.livenessTimeoutSeconds }}
+            failureThreshold: {{ default 6 $component.probes.livenessFailureThreshold }}
           readinessProbe:
             {{- if $component.probes.httpPath }}
             httpGet:
@@ -79,8 +81,10 @@ spec:
             tcpSocket:
               port: {{ $component.probes.tcpPort }}
             {{- end }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ default 10 $component.probes.readinessInitialDelaySeconds }}
+            periodSeconds: {{ default 5 $component.probes.readinessPeriodSeconds }}
+            timeoutSeconds: {{ default 3 $component.probes.readinessTimeoutSeconds }}
+            failureThreshold: {{ default 6 $component.probes.readinessFailureThreshold }}
           {{- end }}
 {{- end }}
 {{- end }}
@@ -183,8 +187,10 @@ spec:
             tcpSocket:
               port: {{ $app.probes.tcpPort }}
             {{- end }}
-            initialDelaySeconds: 20
-            periodSeconds: 10
+            initialDelaySeconds: {{ default 20 $app.probes.livenessInitialDelaySeconds }}
+            periodSeconds: {{ default 10 $app.probes.livenessPeriodSeconds }}
+            timeoutSeconds: {{ default 3 $app.probes.livenessTimeoutSeconds }}
+            failureThreshold: {{ default 6 $app.probes.livenessFailureThreshold }}
           readinessProbe:
             {{- if $app.probes.httpPath }}
             httpGet:
@@ -194,8 +200,10 @@ spec:
             tcpSocket:
               port: {{ $app.probes.tcpPort }}
             {{- end }}
-            initialDelaySeconds: 10
-            periodSeconds: 5
+            initialDelaySeconds: {{ default 10 $app.probes.readinessInitialDelaySeconds }}
+            periodSeconds: {{ default 5 $app.probes.readinessPeriodSeconds }}
+            timeoutSeconds: {{ default 3 $app.probes.readinessTimeoutSeconds }}
+            failureThreshold: {{ default 6 $app.probes.readinessFailureThreshold }}
           {{- end }}
 {{- end }}
 {{- end }}

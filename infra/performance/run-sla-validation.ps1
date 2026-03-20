@@ -3,7 +3,8 @@ param(
     [string]$Duration = "5m",
     [int]$TargetRps = 500,
     [int]$PreAllocatedVus = 200,
-    [int]$MaxVus = 1000
+    [int]$MaxVus = 1000,
+    [string]$DockerNetwork = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -25,24 +26,52 @@ if ($LASTEXITCODE -ne 0) {
     throw "Docker daemon is not available. Start Docker Desktop and retry."
 }
 
+# Prefer direct k3d path from the k6 container when possible.
+# This avoids host.docker.internal NAT resets that can cause EOF/timeouts.
+if ([string]::IsNullOrWhiteSpace($DockerNetwork)) {
+    docker network inspect k3d-edop *> $null
+    if ($LASTEXITCODE -eq 0) {
+        $DockerNetwork = "k3d-edop"
+    }
+}
+
+if ($DockerNetwork -eq "k3d-edop" -and $BaseUrl -match "^https?://(host\.docker\.internal|localhost):8080/?$") {
+    Write-Warning "Switching BASE_URL from '$BaseUrl' to 'http://k3d-edop-serverlb:30080' for direct k3d networking."
+    $BaseUrl = "http://k3d-edop-serverlb:30080"
+}
+
 Write-Host "Running SLA validation profile..."
 Write-Host "BaseUrl          : $BaseUrl"
 Write-Host "Duration         : $Duration"
 Write-Host "Target RPS       : $TargetRps"
 Write-Host "Pre-allocated VUs: $PreAllocatedVus"
 Write-Host "Max VUs          : $MaxVus"
+Write-Host ("Docker network   : {0}" -f $(if ([string]::IsNullOrWhiteSpace($DockerNetwork)) { "<default>" } else { $DockerNetwork }))
 
-docker run --rm `
-    -i `
-    -v "${volumePath}:/scripts" `
-    grafana/k6 run `
-    -e "BASE_URL=$BaseUrl" `
-    -e "DURATION=$Duration" `
-    -e "TARGET_RPS=$TargetRps" `
-    -e "PRE_ALLOCATED_VUS=$PreAllocatedVus" `
-    -e "MAX_VUS=$MaxVus" `
-    --summary-export /scripts/k6-sla-summary.json `
-    /scripts/k6-gateway-sla.js
+$dockerArgs = @(
+    "run",
+    "--rm",
+    "-i",
+    "-v", "${volumePath}:/scripts"
+)
+
+if (-not [string]::IsNullOrWhiteSpace($DockerNetwork)) {
+    $dockerArgs += @("--network", $DockerNetwork)
+}
+
+$dockerArgs += @(
+    "grafana/k6",
+    "run",
+    "-e", "BASE_URL=$BaseUrl",
+    "-e", "DURATION=$Duration",
+    "-e", "TARGET_RPS=$TargetRps",
+    "-e", "PRE_ALLOCATED_VUS=$PreAllocatedVus",
+    "-e", "MAX_VUS=$MaxVus",
+    "--summary-export", "/scripts/k6-sla-summary.json",
+    "/scripts/k6-gateway-sla.js"
+)
+
+& docker @dockerArgs
 
 if ($LASTEXITCODE -ne 0) {
     throw "k6 SLA validation run failed"
