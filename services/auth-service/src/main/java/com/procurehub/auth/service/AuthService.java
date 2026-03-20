@@ -90,7 +90,10 @@ public class AuthService {
 
     @Transactional
     public AuthResponse oauth2Login(String email) {
-        User user = userRepository.findByEmail(email).orElseGet(() -> {
+        boolean created = false;
+        User user = userRepository.findByEmail(email).orElse(null);
+
+        if (user == null) {
             User newUser = new User(
                     email,
                     passwordEncoder.encode(UUID.randomUUID().toString()),
@@ -99,8 +102,13 @@ public class AuthService {
                     true,
                     LocalDateTime.now()
             );
-            return userRepository.save(newUser);
-        });
+            user = userRepository.save(newUser);
+            created = true;
+        }
+
+        if (created) {
+            userCreatedEventPublisher.publish(user);
+        }
 
         if (!user.isEmailVerified()) {
             user.setEmailVerified(true);

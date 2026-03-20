@@ -2,15 +2,32 @@ global:
   resolve_timeout: 5m
 
 route:
-  receiver: external-webhook
+  receiver: default
   group_by: ["alertname", "job", "severity"]
   group_wait: 10s
   group_interval: 30s
   repeat_interval: 1h
+  routes:
+    - receiver: oncall-critical
+      matchers:
+        - severity="critical"
+      group_wait: 5s
+      group_interval: 30s
+      repeat_interval: 15m
+    - receiver: external-webhook
+      matchers:
+        - severity="warning"
+      group_wait: 30s
+      group_interval: 2m
+      repeat_interval: 1h
 
 receivers:
   - name: default
   - name: external-webhook
     webhook_configs:
       - url: __ALERT_WEBHOOK_URL__
+        send_resolved: true
+  - name: oncall-critical
+    webhook_configs:
+      - url: __ALERT_ONCALL_WEBHOOK_URL__
         send_resolved: true

@@ -169,7 +169,9 @@ Covered:
   - Panels verified: `HTTP RPS`, `HTTP 5xx Rate`, `HTTP p95 Latency (ms)`, `Recent ERROR Logs`.
 - Alerting:
   - Alertmanager readiness: `http://localhost:9093/-/ready`
-  - External webhook routing configured via `ALERT_WEBHOOK_URL`
+  - Severity-based routing:
+    - `warning` -> `ALERT_WEBHOOK_URL`
+    - `critical` -> `ALERT_ONCALL_WEBHOOK_URL`
   - Local webhook sink endpoint: `http://localhost:8088`
   - Alert rules present in Prometheus:
     - `EdopServiceDown`
@@ -199,6 +201,11 @@ Evidence:
   - `checks pass rate`: `100%` (`PASS`, threshold `> 99%`)
   - request rate baseline: `~128.82 req/s`
 
+Additional SLA profile tooling:
+- `infra/performance/k6-gateway-sla.js`
+- `infra/performance/run-sla-validation.ps1`
+- `docs/performance-sla-validation.md`
+
 ## 10. Notification rate-limiting baseline (Redis leaky bucket)
 
 Verification status:
@@ -220,9 +227,23 @@ Config:
 - `NOTIFICATION_RATE_LIMIT_LEAK_PER_SECOND` (default `5`)
 - `REDIS_HOST` / `REDIS_PORT`
 
-## 11. Remaining acceptance items (outside current baseline)
+## 11. OAuth2 login baseline hardening
+
+Verification status:
+- `PASS` for auth-service implementation baseline.
+
+Covered:
+- OAuth2 client registrations for Google and GitHub in `auth-service`.
+- OAuth2 success handler issues platform JWT/refresh tokens.
+- GitHub fallback mapping (`login@users.noreply.github.com`) when provider email is unavailable.
+- New users created via OAuth2 publish `user.created` event to keep downstream projections consistent.
+- Unit tests:
+  - `AuthServiceOAuth2LoginTest`
+  - `OAuth2AuthenticationSuccessHandlerTest`
+
+## 12. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
-- Extended multi-scenario load/performance validation (beyond local baseline), with documented long-run SLA/SLO envelopes.
-- Production alert routing governance (on-call schedule/escalation policy and receiver hardening).
+- Extended long-run/multi-scenario load evidence (archive SLA profile artifacts from k8s-like runs).
+- Operational on-call process rollout (schedule ownership/escalation policy with real receivers).
 

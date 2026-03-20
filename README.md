@@ -65,6 +65,12 @@ make dev-down
 .\infra\performance\run-load-baseline.ps1
 ```
 
+## SLA validation profile (500 RPS target)
+
+```powershell
+.\infra\performance\run-sla-validation.ps1
+```
+
 ## Additional docs
 
 - `docs/acceptance-checklist.md`
@@ -72,6 +78,7 @@ make dev-down
 - `docs/ci-cd-pipeline.md`
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
+- `docs/performance-sla-validation.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`

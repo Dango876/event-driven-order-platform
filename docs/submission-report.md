@@ -48,13 +48,24 @@ Main stack used:
     - `EdopServiceDown`
     - `EdopHigh5xxRate`
     - `EdopHighP95Latency`
+- Alert governance baseline:
+  - severity-based Alertmanager routing:
+    - `critical` -> `oncall-critical` (`ALERT_ONCALL_WEBHOOK_URL`)
+    - `warning` -> `external-webhook` (`ALERT_WEBHOOK_URL`)
 - Notification rate limiting baseline (Redis leaky bucket):
   - `notification-service` uses Redis-backed leaky bucket for per-user notification throttling
   - `orderId -> userId` mapping is cached in Redis to apply user-level limits for status-change events
+- OAuth2 login hardening baseline:
+  - social OAuth2 login flow covered with unit tests in `auth-service`
+  - new OAuth-created users now publish `user.created` event for cross-service consistency
 - Load/SLO baseline tooling:
   - k6 scenario: `infra/performance/k6-gateway-baseline.js`
   - run helper: `infra/performance/run-load-baseline.ps1`
   - baseline guide: `docs/load-slo-baseline.md`
+- SLA validation profile tooling:
+  - k6 constant-arrival-rate profile: `infra/performance/k6-gateway-sla.js`
+  - run helper: `infra/performance/run-sla-validation.ps1`
+  - guide: `docs/performance-sla-validation.md`
 - CI/CD pipeline baseline:
   - CI executes unit tests and API integration test with Testcontainers + WebTestClient (`OrderLifecycleWebTestClientIT`).
   - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
@@ -150,7 +161,7 @@ Detailed docs:
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
-- Remaining next-iteration items are production-grade long-run load/SLO validation and operational on-call escalation policy.
+- Remaining next-iteration items are long-run SLA evidence collection in k8s-like environment and operational on-call process rollout.
 
 ## 8) CI/Security evidence
 

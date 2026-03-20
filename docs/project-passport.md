@@ -35,8 +35,12 @@ Core stack:
   - metrics (Prometheus), logs (Loki/Promtail), tracing (Jaeger), dashboards (Grafana).
 - Alerting baseline:
   - Prometheus alert rules + Alertmanager routing + local webhook sink.
+- Alert governance baseline:
+  - severity-based Alertmanager routes (`warning` vs `critical`) with dedicated on-call webhook config.
 - Notification rate-limiting baseline:
   - Redis leaky bucket in `notification-service`.
+- SLA validation profile:
+  - k6 `constant-arrival-rate` profile for 500 RPS target with p95/error thresholds and exported artifact.
 - CI/CD baseline:
   - CI + Security workflows green.
   - CD workflow defined in `.github/workflows/cd.yml`.
@@ -75,6 +79,6 @@ Detailed acceptance evidence:
 
 ## 6) Remaining production-hardening items (not blocking MVP)
 
-- Long-run load/perf validation for full SLA envelope (500 RPS target window).
-- Production alert routing governance (on-call escalation policy).
-- Optional stretch features from plan (social OAuth login, advanced rate-limit tuning, etc.).
+- Long-run load/perf validation evidence in k8s-like environment (with archived SLA reports per run).
+- On-call governance rollout (real receiver integrations, escalation calendar ownership, runbooks).
+- Optional stretch features from plan (advanced rate-limit tuning, etc.).

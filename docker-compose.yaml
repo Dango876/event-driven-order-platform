@@ -151,10 +151,11 @@ services:
       - alert-webhook-sink
     environment:
       ALERT_WEBHOOK_URL: ${ALERT_WEBHOOK_URL:-http://alert-webhook-sink:8080/alerts}
+      ALERT_ONCALL_WEBHOOK_URL: ${ALERT_ONCALL_WEBHOOK_URL:-http://alert-webhook-sink:8080/alerts}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
-        sed "s|__ALERT_WEBHOOK_URL__|$${ALERT_WEBHOOK_URL}|g" /etc/alertmanager/alertmanager.yml > /tmp/alertmanager.yml
+        sed -e "s|__ALERT_WEBHOOK_URL__|$${ALERT_WEBHOOK_URL}|g" -e "s|__ALERT_ONCALL_WEBHOOK_URL__|$${ALERT_ONCALL_WEBHOOK_URL}|g" /etc/alertmanager/alertmanager.yml > /tmp/alertmanager.yml
         exec /bin/alertmanager --config.file=/tmp/alertmanager.yml --storage.path=/alertmanager
     volumes:
       - ./infra/observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
