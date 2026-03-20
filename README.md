@@ -84,3 +84,4 @@ make dev-down
 - `docs/order-service-local-verification.md`
 - `docs/project-passport.md`
 - `docs/swagger-openapi-endpoints.md`
+- `docs/tls-secrets-k8s-baseline.md`

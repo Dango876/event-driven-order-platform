@@ -66,6 +66,10 @@ Main stack used:
   - k6 constant-arrival-rate profile: `infra/performance/k6-gateway-sla.js`
   - run helper: `infra/performance/run-sla-validation.ps1`
   - guide: `docs/performance-sla-validation.md`
+- TLS + secrets k8s baseline:
+  - optional ingress TLS for `api-gateway` in Helm chart
+  - optional TLS secret upsert in CD from GitHub Secrets
+  - optional `envFromSecrets` wiring in deployment template
 - CI/CD pipeline baseline:
   - CI executes unit tests and API integration test with Testcontainers + WebTestClient (`OrderLifecycleWebTestClientIT`).
   - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
@@ -138,10 +142,12 @@ Detailed docs:
 - `docs/alert-routing.md`
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
+- `docs/performance-sla-validation.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/swagger-openapi-endpoints.md`
+- `docs/tls-secrets-k8s-baseline.md`
 
 ## 6) Current status vs acceptance points
 
@@ -154,6 +160,7 @@ Detailed docs:
 - Alerting baseline (Prometheus rules + Alertmanager): done
 - External webhook alert routing baseline: done
 - Load/SLO baseline tooling and local run: done
+- TLS/secrets k8s deployment baseline: done
 - CI API integration test baseline (Testcontainers + WebTestClient): done
 - CD workflow baseline (build/push + Helm dev/prod path): done
 

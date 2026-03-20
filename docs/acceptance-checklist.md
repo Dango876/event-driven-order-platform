@@ -7,7 +7,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 - Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
-Date of latest verification: 2026-03-19 (Europe/Moscow).
+Date of latest verification: 2026-03-20 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -206,6 +206,12 @@ Additional SLA profile tooling:
 - `infra/performance/run-sla-validation.ps1`
 - `docs/performance-sla-validation.md`
 
+SLA profile evidence (`-Duration 5m -TargetRps 500`):
+- request rate: `499.42 req/s` (`PASS`, >= 95% of target)
+- p95 latency: `3.82ms` (`PASS`, < 150ms)
+- failed rate: `0%` (`PASS`, < 1%)
+- checks pass rate: `100%` (`PASS`, > 99%)
+
 ## 10. Notification rate-limiting baseline (Redis leaky bucket)
 
 Verification status:
@@ -241,7 +247,28 @@ Covered:
   - `AuthServiceOAuth2LoginTest`
   - `OAuth2AuthenticationSuccessHandlerTest`
 
-## 12. Remaining acceptance items (outside current baseline)
+## 12. TLS + Secrets k8s baseline
+
+Verification status:
+- `PASS` for deployment baseline implementation.
+
+Covered:
+- Optional ingress template for `api-gateway` with TLS support.
+- TLS policy annotations include nginx TLS 1.3 protocol restriction.
+- CD workflow can optionally upsert TLS secrets from GitHub Secrets:
+  - `TLS_CERT_PEM_DEV` / `TLS_KEY_PEM_DEV`
+  - `TLS_CERT_PEM_PROD` / `TLS_KEY_PEM_PROD`
+- Prod CD deploy enables ingress TLS and uses `edop-gateway-tls`.
+- Helm deployment template supports optional secret refs via `envFromSecrets`.
+
+Evidence:
+- `infra/helm/edop/templates/ingress.yaml`
+- `infra/helm/edop/values.yaml`
+- `infra/helm/edop/templates/deployments.yaml`
+- `.github/workflows/cd.yml`
+- `docs/tls-secrets-k8s-baseline.md`
+
+## 13. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
 - Extended long-run/multi-scenario load evidence (archive SLA profile artifacts from k8s-like runs).

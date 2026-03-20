@@ -1,6 +1,6 @@
 # Project Passport (MVP)
 
-Date: 2026-03-19 (Europe/Moscow)
+Date: 2026-03-20 (Europe/Moscow)
 Repository: `Dango876/event-driven-order-platform`
 Stage: MVP / acceptance baseline complete
 
@@ -41,6 +41,8 @@ Core stack:
   - Redis leaky bucket in `notification-service`.
 - SLA validation profile:
   - k6 `constant-arrival-rate` profile for 500 RPS target with p95/error thresholds and exported artifact.
+- TLS + secrets k8s baseline:
+  - optional gateway ingress TLS (TLS 1.3 policy annotations), optional TLS secret upsert in CD, and optional pod secret wiring.
 - CI/CD baseline:
   - CI + Security workflows green.
   - CD workflow defined in `.github/workflows/cd.yml`.
@@ -59,6 +61,7 @@ Detailed acceptance evidence:
 - `docs/submission-report.md`
 - `docs/observability-local-run.md`
 - `docs/ci-cd-pipeline.md`
+- `docs/tls-secrets-k8s-baseline.md`
 
 ## 4) Quick reproduce
 
@@ -76,6 +79,7 @@ Detailed acceptance evidence:
 - Mandatory acceptance baseline: completed.
 - CI/Security baseline: completed and green.
 - Local deploy/repro and observability baseline: completed.
+- K8s TLS/secrets deployment baseline: completed.
 
 ## 6) Remaining production-hardening items (not blocking MVP)
 

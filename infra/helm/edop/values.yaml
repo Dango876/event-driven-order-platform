@@ -212,6 +212,9 @@ applications:
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       AUTH_BASE_URL: http://auth-service:8081
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    envFromSecrets:
+      - name: auth-service
+        optional: true
     probes:
       httpPath: /actuator/health
       httpPort: 8081
@@ -361,8 +364,26 @@ applications:
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+    envFromSecrets:
+      - name: api-gateway
+        optional: true
     probes:
       httpPath: /actuator/health
       httpPort: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  host: edop.local
+  path: /
+  pathType: Prefix
+  annotations:
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.3"
+  tls:
+    enabled: false
+    secretName: edop-gateway-tls
 
 

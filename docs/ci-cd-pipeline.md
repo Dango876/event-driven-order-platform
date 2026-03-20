@@ -25,20 +25,25 @@ CD pipeline stages:
 1. Build and push Docker images for all services to GHCR.
 2. Helm deploy to `edop-dev` namespace (when `KUBE_CONFIG_DEV` is configured).
 3. Helm deploy to `edop-prod` namespace after manual approval through GitHub `prod` environment (when `KUBE_CONFIG_PROD` is configured).
+4. (Optional) Upsert TLS secret for gateway ingress from GitHub Secrets.
 
 ## Required repository setup
 
 GitHub Secrets:
 - `KUBE_CONFIG_DEV` - kubeconfig content for dev cluster
 - `KUBE_CONFIG_PROD` - kubeconfig content for prod cluster
+- `TLS_CERT_PEM_DEV` / `TLS_KEY_PEM_DEV` - optional dev ingress TLS cert/key
+- `TLS_CERT_PEM_PROD` / `TLS_KEY_PEM_PROD` - optional prod ingress TLS cert/key
 
 GitHub Environment:
 - `prod` with required reviewers (manual approval gate)
 
 Optional:
 - `dev` environment for visibility and governance of dev deployments
+- repository variable `PROD_GATEWAY_HOST` for prod ingress hostname (fallback: `edop.example.com`)
 
 ## Notes
 
 - CD deploy jobs are skipped when corresponding kubeconfig secret is not present.
 - Helm chart path used by CD: `infra/helm/edop`.
+- Prod deploy enables ingress TLS in chart values and uses secret `edop-gateway-tls`.

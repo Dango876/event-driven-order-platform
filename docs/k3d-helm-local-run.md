@@ -21,6 +21,10 @@ Create `.env` files in `.secrets/dev` (see `.secrets/dev/README.md`) and run:
 make inject-secrets
 ```
 
+Example secret files:
+- `.secrets/dev/auth-service.env` (JWT/OAuth secrets)
+- `.secrets/dev/api-gateway.env` (gateway runtime secrets, if needed)
+
 ## 2. Start cluster and deploy stack
 
 ```powershell
@@ -33,6 +37,7 @@ What this does:
 - imports images into cluster
 - deploys infra + services with Helm chart `infra/helm/edop`
 - exposes API Gateway on `http://localhost:8080`
+- keeps ingress TLS disabled by default for local k3d baseline
 
 ## 3. Validate deployment
 

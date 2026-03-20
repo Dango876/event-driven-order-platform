@@ -16,6 +16,14 @@ OAUTH_GOOGLE_CLIENT_ID=replace
 OAUTH_GOOGLE_CLIENT_SECRET=replace
 ```
 
+Optional:
+
+File: `.secrets/dev/api-gateway.env`
+
+```env
+SOME_GATEWAY_SECRET=replace-with-dev-secret
+```
+
 Apply them with:
 
 ```powershell

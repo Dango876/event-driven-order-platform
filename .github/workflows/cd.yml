@@ -98,6 +98,20 @@ jobs:
           printf '%s' "${{ secrets.KUBE_CONFIG_DEV }}" > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
+      - name: Upsert TLS secret (dev, optional)
+        if: ${{ secrets.TLS_CERT_PEM_DEV != '' && secrets.TLS_KEY_PEM_DEV != '' }}
+        shell: bash
+        run: |
+          cert_file="$(mktemp)"
+          key_file="$(mktemp)"
+          printf '%s' "${{ secrets.TLS_CERT_PEM_DEV }}" > "$cert_file"
+          printf '%s' "${{ secrets.TLS_KEY_PEM_DEV }}" > "$key_file"
+          kubectl -n edop-dev create secret tls edop-gateway-tls \
+            --cert="$cert_file" \
+            --key="$key_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm -f "$cert_file" "$key_file"
+
       - name: Helm release to dev namespace
         shell: bash
         run: |
@@ -154,13 +168,37 @@ jobs:
           printf '%s' "${{ secrets.KUBE_CONFIG_PROD }}" > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
+      - name: Upsert TLS secret (prod, optional)
+        if: ${{ secrets.TLS_CERT_PEM_PROD != '' && secrets.TLS_KEY_PEM_PROD != '' }}
+        shell: bash
+        run: |
+          cert_file="$(mktemp)"
+          key_file="$(mktemp)"
+          printf '%s' "${{ secrets.TLS_CERT_PEM_PROD }}" > "$cert_file"
+          printf '%s' "${{ secrets.TLS_KEY_PEM_PROD }}" > "$key_file"
+          kubectl -n edop-prod create secret tls edop-gateway-tls \
+            --cert="$cert_file" \
+            --key="$key_file" \
+            --dry-run=client -o yaml | kubectl apply -f -
+          rm -f "$cert_file" "$key_file"
+
       - name: Helm release to prod namespace
         shell: bash
         run: |
+          GATEWAY_HOST="${{ vars.PROD_GATEWAY_HOST }}"
+          if [ -z "$GATEWAY_HOST" ]; then
+            GATEWAY_HOST="edop.example.com"
+          fi
+
           helm upgrade --install edop ./infra/helm/edop \
             --namespace edop-prod \
             --create-namespace \
             -f ./infra/helm/edop/values.yaml \
+            --set ingress.enabled=true \
+            --set ingress.tls.enabled=true \
+            --set-string ingress.tls.secretName=edop-gateway-tls \
+            --set-string ingress.host="$GATEWAY_HOST" \
+            --set-string applications[6].service.type=ClusterIP \
             --set-string applications[0].image=${REGISTRY}/${{ steps.vars.outputs.image_owner }}/edop-auth-service:${IMAGE_TAG} \
             --set-string applications[1].image=${REGISTRY}/${{ steps.vars.outputs.image_owner }}/edop-user-service:${IMAGE_TAG} \
             --set-string applications[2].image=${REGISTRY}/${{ steps.vars.outputs.image_owner }}/edop-product-service:${IMAGE_TAG} \

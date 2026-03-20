@@ -147,9 +147,15 @@ spec:
           {{- end }}
           {{- if $app.envFromSecrets }}
           envFrom:
-            {{- range $secretName := $app.envFromSecrets }}
+            {{- range $secretRef := $app.envFromSecrets }}
+            {{- if kindIs "string" $secretRef }}
             - secretRef:
-                name: {{ $secretName }}
+                name: {{ $secretRef }}
+            {{- else }}
+            - secretRef:
+                name: {{ $secretRef.name }}
+                optional: {{ default false $secretRef.optional }}
+            {{- end }}
             {{- end }}
           {{- end }}
           {{- if $app.probes }}
