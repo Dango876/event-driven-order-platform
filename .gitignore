@@ -40,3 +40,4 @@ build/
 .secrets/dev/*.env
 !.secrets/dev/*.env.example
 !.secrets/dev/.gitkeep
+infra/performance/k6-sla-summary.json
