@@ -16,13 +16,13 @@ This complements DB pessimistic locking and provides cross-instance coordination
 Service: `inventory-service`
 
 - Lock manager:
-  - `services/inventory-service/src/main/java/com/procurenhub/inventory/service/RedisDistributedLockService.java`
+  - `services/inventory-service/src/main/java/com/procurehub/inventory/service/RedisDistributedLockService.java`
 - Lock exception:
-  - `services/inventory-service/src/main/java/com/procurenhub/inventory/service/DistributedLockException.java`
+  - `services/inventory-service/src/main/java/com/procurehub/inventory/service/DistributedLockException.java`
 - Inventory operations wrapped with lock:
-  - `services/inventory-service/src/main/java/com/procurenhub/inventory/service/InventoryService.java`
+  - `services/inventory-service/src/main/java/com/procurehub/inventory/service/InventoryService.java`
 - HTTP mapping for lock failures:
-  - `services/inventory-service/src/main/java/com/procurenhub/inventory/api/error/GlobalExceptionHandler.java` -> `503 Service Unavailable`
+  - `services/inventory-service/src/main/java/com/procurehub/inventory/api/error/GlobalExceptionHandler.java` -> `503 Service Unavailable`
 
 Lock behavior:
 
