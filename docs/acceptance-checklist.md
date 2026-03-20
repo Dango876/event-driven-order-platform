@@ -268,7 +268,27 @@ Evidence:
 - `.github/workflows/cd.yml`
 - `docs/tls-secrets-k8s-baseline.md`
 
-## 13. Remaining acceptance items (outside current baseline)
+## 13. Redis distributed lock baseline (Redlock pattern)
+
+Verification status:
+- `PASS` for implementation baseline in `inventory-service`.
+
+Covered:
+- Redis-backed distributed lock manager for inventory write operations.
+- Lock ownership-safe release via Lua script.
+- Configurable timeout/retry/lease/fail-open behavior.
+- HTTP mapping for lock acquisition failures -> `503`.
+- Unit tests:
+  - `InventoryServiceDistributedLockTest`
+
+Evidence:
+- `services/inventory-service/src/main/java/com/procurenhub/inventory/service/RedisDistributedLockService.java`
+- `services/inventory-service/src/main/java/com/procurenhub/inventory/service/InventoryService.java`
+- `services/inventory-service/src/main/java/com/procurenhub/inventory/api/error/GlobalExceptionHandler.java`
+- `services/inventory-service/src/test/java/com/procurenhub/inventory/service/InventoryServiceDistributedLockTest.java`
+- `docs/redis-distributed-locks.md`
+
+## 14. Remaining acceptance items (outside current baseline)
 
 Still to be finalized against full production-grade acceptance:
 - Extended long-run/multi-scenario load evidence (archive SLA profile artifacts from k8s-like runs).

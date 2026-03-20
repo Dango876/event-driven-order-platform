@@ -33,6 +33,12 @@ spring:
       schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
       auto.register.schemas: true
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: ${REDIS_TIMEOUT:500ms}
+
 management:
   endpoints:
     web:
@@ -53,4 +59,13 @@ app:
   kafka:
     topics:
       inventory-reserved: ${KAFKA_TOPIC_INVENTORY_RESERVED:inventory.reserved}
+
+inventory:
+  lock:
+    enabled: ${INVENTORY_LOCK_ENABLED:true}
+    fail-open: ${INVENTORY_LOCK_FAIL_OPEN:true}
+    wait-timeout-ms: ${INVENTORY_LOCK_WAIT_TIMEOUT_MS:1200}
+    lease-timeout-ms: ${INVENTORY_LOCK_LEASE_TIMEOUT_MS:5000}
+    retry-delay-ms: ${INVENTORY_LOCK_RETRY_DELAY_MS:50}
+    key-prefix: ${INVENTORY_LOCK_KEY_PREFIX:inventory:redlock:product:}
 

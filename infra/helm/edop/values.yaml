@@ -287,7 +287,11 @@ applications:
       DB_PASSWORD: inventory_pass
       KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       GRPC_SERVER_PORT: "9091"
+      INVENTORY_LOCK_ENABLED: "true"
+      INVENTORY_LOCK_FAIL_OPEN: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health

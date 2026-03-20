@@ -79,6 +79,7 @@ make dev-down
 - `docs/k3d-helm-local-run.md`
 - `docs/load-slo-baseline.md`
 - `docs/performance-sla-validation.md`
+- `docs/redis-distributed-locks.md`
 - `docs/notification-rate-limit.md`
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
