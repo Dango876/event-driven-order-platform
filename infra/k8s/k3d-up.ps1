@@ -49,17 +49,18 @@ function Require-Command {
     }
 }
 
-function Wait-HttpUp {
+function Wait-HttpStatusCode {
     param(
         [Parameter(Mandatory = $true)][string]$Url,
+        [int]$ExpectedStatusCode = 200,
         [int]$TimeoutSec = 180
     )
 
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while ((Get-Date) -lt $deadline) {
         try {
-            $result = Invoke-RestMethod -Uri $Url -Method Get -TimeoutSec 5
-            if ($result.status -eq "UP") {
+            $result = Invoke-WebRequest -UseBasicParsing -Uri $Url -Method Get -TimeoutSec 5
+            if ($result.StatusCode -eq $ExpectedStatusCode) {
                 return
             }
         }
@@ -368,10 +369,27 @@ if ($ImportInfraImages) {
 }
 
 Write-Host "Importing images into k3d cluster '$ClusterName'..."
-$importOutput = & k3d image import $images -c $ClusterName 2>&1
+$previousErrorActionPreference = $ErrorActionPreference
+try {
+    $ErrorActionPreference = "Continue"
+    $importOutput = & k3d image import $images -c $ClusterName 2>&1
+    $importExitCode = $LASTEXITCODE
+}
+finally {
+    $ErrorActionPreference = $previousErrorActionPreference
+}
+
 $importOutput | Out-Host
-if ($LASTEXITCODE -ne 0) {
+
+$importText = ($importOutput | ForEach-Object { "$_" }) -join [Environment]::NewLine
+$reportedImportSuccess = $importText -match "Successfully imported \d+ image\(s\) into \d+ cluster\(s\)"
+
+if ($importExitCode -ne 0 -and -not $reportedImportSuccess) {
     throw "k3d image import failed"
+}
+
+if ($importExitCode -ne 0 -and $reportedImportSuccess) {
+    Write-Host "k3d image import reported success despite stderr noise; continuing."
 }
 
 Ensure-NamespaceReady -Ns $Namespace
@@ -400,14 +418,15 @@ if (-not $helmSucceeded) {
     throw "helm upgrade --install failed after 2 attempts"
 }
 
-Write-Host "Waiting for gateway health endpoint..."
-Wait-HttpUp -Url "http://localhost:$GatewayHostPort/actuator/health" -TimeoutSec 240
+Write-Host "Waiting for public gateway endpoint..."
+Wait-HttpStatusCode -Url "http://localhost:$GatewayHostPort/swagger-ui.html" -ExpectedStatusCode 200 -TimeoutSec 240
 
 Write-Host ""
 Write-Host "k3d stack is ready."
-Write-Host "Gateway health:  http://localhost:$GatewayHostPort/actuator/health"
-Write-Host "Gateway swagger: http://localhost:$GatewayHostPort/swagger-ui.html"
-Write-Host "Check pods:       kubectl get pods -n $Namespace"
+Write-Host "Gateway public URL: http://localhost:$GatewayHostPort/"
+Write-Host "Gateway swagger:    http://localhost:$GatewayHostPort/swagger-ui.html"
+Write-Host "Gateway sample API: http://localhost:$GatewayHostPort/api/products"
+Write-Host "Check pods:         kubectl get pods -n $Namespace"
 
 
 

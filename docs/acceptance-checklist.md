@@ -7,7 +7,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 - Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
-Date of latest verification: 2026-03-20 (Europe/Moscow).
+Date of latest verification: 2026-03-22 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -214,6 +214,19 @@ SLA profile evidence (`-Duration 5m -TargetRps 500`):
 - failed rate: `0%` (`PASS`, < 1%)
 - checks pass rate: `100%` (`PASS`, > 99%)
 
+Long-run SLA evidence (`-Duration 10m -TargetRps 500`):
+- verification date: `2026-03-22`
+- command:
+  - `.\infra\performance\run-sla-k8s-evidence.ps1 -Runner k8s -BaseUrl http://api-gateway:8080 -Duration 10m -TargetRps 500 -PreAllocatedVus 200 -MaxVus 1000 -WarmupDuration 20s -WarmupTargetRps 100 -WarmupPreAllocatedVus 50 -WarmupMaxVus 200`
+- observed result:
+  - request rate: `500.06 req/s` (`PASS`, >= 95% of target)
+  - p95 latency: `3.21ms` (`PASS`, < 150ms)
+  - failed rate: `0%` (`PASS`, < 1%)
+  - checks pass rate: `100%` (`PASS`, > 99%)
+- archived evidence:
+  - `infra/performance/evidence/k6-sla-summary-20260322-145202.json`
+  - `infra/performance/evidence/k6-sla-evidence-20260322-145202.md`
+
 ## 10. Notification rate-limiting baseline (Redis leaky bucket)
 
 Verification status:
@@ -318,9 +331,12 @@ Evidence:
 
 ## 15. Remaining acceptance items (outside current baseline)
 
-Still to be finalized against full production-grade acceptance:
-- Execute long-run SLA profile on k3d and attach archived evidence:
-  - command: `.\infra\performance\run-sla-k8s-evidence.ps1 -Duration 10m -TargetRps 500`
-  - artifact directory: `infra/performance/evidence/`
+Long-run SLA evidence on k3d is now complete and archived:
+- command completed successfully on `2026-03-22`
+- evidence files:
+  - `infra/performance/evidence/k6-sla-summary-20260322-145202.json`
+  - `infra/performance/evidence/k6-sla-evidence-20260322-145202.md`
+
+Still outside the current local baseline:
 - Operational on-call process rollout (schedule ownership/escalation policy with real receivers).
 

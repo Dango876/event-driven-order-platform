@@ -66,6 +66,17 @@ Main stack used:
   - k6 constant-arrival-rate profile: `infra/performance/k6-gateway-sla.js`
   - run helper: `infra/performance/run-sla-validation.ps1`
   - guide: `docs/performance-sla-validation.md`
+- Archived long-run SLA evidence on k3d:
+  - verification date: `2026-03-22`
+  - profile: `500 RPS / 10m`
+  - result:
+    - request rate: `500.06 req/s`
+    - p95 latency: `3.21ms`
+    - failed rate: `0%`
+    - checks pass rate: `100%`
+  - archived files:
+    - `infra/performance/evidence/k6-sla-summary-20260322-145202.json`
+    - `infra/performance/evidence/k6-sla-evidence-20260322-145202.md`
 - TLS + secrets k8s baseline:
   - optional ingress TLS for `api-gateway` in Helm chart
   - optional TLS secret upsert in CD from GitHub Secrets
@@ -167,6 +178,7 @@ Detailed docs:
 - Alerting baseline (Prometheus rules + Alertmanager): done
 - External webhook alert routing baseline: done
 - Load/SLO baseline tooling and local run: done
+- Long-run SLA evidence on k3d (`500 RPS / 10m`): done
 - TLS/secrets k8s deployment baseline: done
 - Kubernetes scaling + no-downtime rollout baseline: done
 - CI API integration test baseline (Testcontainers + WebTestClient): done
@@ -176,9 +188,7 @@ Detailed docs:
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
-- Long-run SLA evidence can now be generated in k3d profile via:
-  - `.\infra\performance\run-sla-k8s-evidence.ps1`
-  - artifacts are archived under `infra/performance/evidence/`
+- Long-run SLA evidence was generated successfully in k3d profile on `2026-03-22` and archived under `infra/performance/evidence/`.
 - Remaining next-iteration item is operational on-call process rollout.
 
 ## 8) CI/Security evidence

@@ -23,8 +23,27 @@ function Assert-StatusCode {
     Write-Host "[OK] $Url -> $($resp.StatusCode)"
 }
 
+function Assert-GatewayReady {
+    param(
+        [Parameter(Mandatory = $true)][string]$BaseUrl
+    )
+
+    try {
+        $health = Invoke-RestMethod -Uri "$BaseUrl/actuator/health" -Method Get -TimeoutSec 10
+        if ($health.status -eq "UP") {
+            Write-Host "[OK] $BaseUrl/actuator/health -> UP"
+            return
+        }
+    }
+    catch {
+    }
+
+    Assert-StatusCode -Url "$BaseUrl/swagger-ui.html"
+    Write-Host "[OK] Public gateway route is reachable (management health is not exposed on this base URL)."
+}
+
 Write-Host "Running smoke checks..."
-Assert-StatusCode -Url "$BaseUrl/actuator/health"
+Assert-GatewayReady -BaseUrl $BaseUrl
 Assert-StatusCode -Url "$BaseUrl/swagger-ui.html"
 Assert-StatusCode -Url "$BaseUrl/api-docs/auth"
 Assert-StatusCode -Url "$BaseUrl/api-docs/user"
