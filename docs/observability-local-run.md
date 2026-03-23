@@ -29,24 +29,33 @@ Run local observability for all services and verify:
 
 ## What is scraped
 
-Prometheus scrapes `/actuator/prometheus` from:
+Prometheus scrapes `/actuator/prometheus` from internal Docker Compose targets:
 
-- api-gateway (`localhost:8080`)
-- auth-service (`localhost:8081`)
-- user-service (`localhost:8082`)
-- product-service (`localhost:8083`)
-- inventory-service (`localhost:8084`)
-- order-service (`localhost:8086`)
-- notification-service (`localhost:8087`)
+- `api-gateway:8080`
+- `auth-service:8081`
+- `user-service:8082`
+- `product-service:8083`
+- `inventory-service:8084`
+- `order-service:8086`
+- `notification-service:8087`
 
 And Redpanda admin metrics from:
 
 - `redpanda:9644/metrics`
 
-Logs are collected from local files:
+Logs are collected from local files written by containerized services:
 
-- `.logs/*.out.log`
-- `.logs/*.err.log`
+- `.logs/*.app.log`
+
+Each service writes its Spring Boot application log to a dedicated file:
+
+- `api-gateway.app.log`
+- `auth-service.app.log`
+- `user-service.app.log`
+- `product-service.app.log`
+- `inventory-service.app.log`
+- `order-service.app.log`
+- `notification-service.app.log`
 
 Prometheus alert rules are loaded from:
 
@@ -63,7 +72,8 @@ Alertmanager external routing is configured via webhook URL:
 Tracing export is configured via OTLP:
 
 - env var: `OTEL_EXPORTER_OTLP_ENDPOINT`
-- default in local stack: `http://localhost:4318/v1/traces` (Jaeger OTLP HTTP)
+- default inside application containers: `http://jaeger:4318/v1/traces`
+- host-exposed Jaeger OTLP HTTP endpoint: `http://localhost:4318/v1/traces`
 
 Configured baseline alerts:
 
@@ -96,11 +106,14 @@ Configured baseline alerts:
 8. Open Grafana:
    - `Connections -> Data sources`
    - Expected: `Prometheus` and `Loki` exist and are healthy.
-9. In Grafana open `Explore`:
+9. Confirm fresh application log files exist:
+   - PowerShell: `Get-ChildItem .\.logs\*.app.log`
+   - Expected: files have current timestamps after `.\dev-up.ps1`.
+10. In Grafana open `Explore`:
    - choose datasource `Loki`
    - run query: `{job="edop-local"}`
    - Expected: logs from local services are visible.
-10. Open dashboard:
+11. Open dashboard:
    - `Dashboards -> EDOP Local -> EDOP Local Observability`
    - Expected panels:
      - `HTTP RPS`
@@ -112,20 +125,20 @@ Configured baseline alerts:
 
 You can force `EdopServiceDown` and observe it in Prometheus/Alertmanager.
 
-1. Stop one service process (example: order-service on port `8086`):
+1. Stop one service container (example: `order-service`):
 
 ```powershell
-Get-NetTCPConnection -LocalPort 8086 -State Listen | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+docker compose stop order-service
 ```
 
 2. Wait ~1-2 minutes (rule has `for: 1m`), then check:
    - Prometheus alerts API: `http://localhost:9090/api/v1/alerts`
    - Alertmanager UI: `http://localhost:9093`
 
-3. Start stack again:
+3. Start the stopped container again:
 
 ```powershell
-.\dev-up.ps1
+docker compose start order-service
 ```
 
 ## Stop
