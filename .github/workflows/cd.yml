@@ -16,6 +16,50 @@ env:
   IMAGE_TAG: ${{ github.sha }}
 
 jobs:
+  detect-deploy-targets:
+    runs-on: ubuntu-latest
+    outputs:
+      has_dev: ${{ steps.flags.outputs.has_dev }}
+      has_dev_tls: ${{ steps.flags.outputs.has_dev_tls }}
+      has_prod: ${{ steps.flags.outputs.has_prod }}
+      has_prod_tls: ${{ steps.flags.outputs.has_prod_tls }}
+
+    steps:
+      - name: Detect available deployment secrets
+        id: flags
+        shell: bash
+        env:
+          KUBE_CONFIG_DEV: ${{ secrets.KUBE_CONFIG_DEV }}
+          TLS_CERT_PEM_DEV: ${{ secrets.TLS_CERT_PEM_DEV }}
+          TLS_KEY_PEM_DEV: ${{ secrets.TLS_KEY_PEM_DEV }}
+          KUBE_CONFIG_PROD: ${{ secrets.KUBE_CONFIG_PROD }}
+          TLS_CERT_PEM_PROD: ${{ secrets.TLS_CERT_PEM_PROD }}
+          TLS_KEY_PEM_PROD: ${{ secrets.TLS_KEY_PEM_PROD }}
+        run: |
+          if [ -n "$KUBE_CONFIG_DEV" ]; then
+            echo "has_dev=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_dev=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$TLS_CERT_PEM_DEV" ] && [ -n "$TLS_KEY_PEM_DEV" ]; then
+            echo "has_dev_tls=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_dev_tls=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$KUBE_CONFIG_PROD" ]; then
+            echo "has_prod=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_prod=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          if [ -n "$TLS_CERT_PEM_PROD" ] && [ -n "$TLS_KEY_PEM_PROD" ]; then
+            echo "has_prod_tls=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_prod_tls=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-push-images:
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -64,8 +108,10 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.service }}
 
   deploy-dev:
-    if: ${{ secrets.KUBE_CONFIG_DEV != '' }}
-    needs: build-and-push-images
+    if: ${{ needs.detect-deploy-targets.outputs.has_dev == 'true' }}
+    needs:
+      - detect-deploy-targets
+      - build-and-push-images
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -99,7 +145,7 @@ jobs:
           chmod 600 "$HOME/.kube/config"
 
       - name: Upsert TLS secret (dev, optional)
-        if: ${{ secrets.TLS_CERT_PEM_DEV != '' && secrets.TLS_KEY_PEM_DEV != '' }}
+        if: ${{ needs.detect-deploy-targets.outputs.has_dev_tls == 'true' }}
         shell: bash
         run: |
           cert_file="$(mktemp)"
@@ -134,8 +180,11 @@ jobs:
         run: kubectl get pods -n edop-dev -o wide
 
   deploy-prod:
-    if: ${{ secrets.KUBE_CONFIG_PROD != '' }}
-    needs: deploy-dev
+    if: ${{ needs.detect-deploy-targets.outputs.has_prod == 'true' && (needs.detect-deploy-targets.outputs.has_dev != 'true' || needs.deploy-dev.result == 'success') }}
+    needs:
+      - detect-deploy-targets
+      - build-and-push-images
+      - deploy-dev
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
@@ -169,7 +218,7 @@ jobs:
           chmod 600 "$HOME/.kube/config"
 
       - name: Upsert TLS secret (prod, optional)
-        if: ${{ secrets.TLS_CERT_PEM_PROD != '' && secrets.TLS_KEY_PEM_PROD != '' }}
+        if: ${{ needs.detect-deploy-targets.outputs.has_prod_tls == 'true' }}
         shell: bash
         run: |
           cert_file="$(mktemp)"
