@@ -88,8 +88,8 @@ class OrderLifecycleIntegrationTest {
         patchStatus(orderId, "SHIPPED", "Status changed: PAID -> SHIPPED");
         patchStatus(orderId, "COMPLETED", "Status changed: SHIPPED -> COMPLETED");
 
-        mockMvc.perform(get("/orders/{orderId}", orderId))
-                .header("Authorization", USER_AUTHORIZATION)
+        mockMvc.perform(get("/orders/{orderId}", orderId)
+                        .header("Authorization", USER_AUTHORIZATION))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
