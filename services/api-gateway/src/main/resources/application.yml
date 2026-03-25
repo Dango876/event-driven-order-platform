@@ -5,6 +5,11 @@ spring:
   application:
     name: api-gateway
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
   cloud:
     gateway:
       routes:
@@ -14,6 +19,10 @@ spring:
             - Path=/api/auth/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: user-service
           uri: ${USER_SERVICE_URL:http://localhost:8082}
@@ -21,6 +30,10 @@ spring:
             - Path=/api/users/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: product-service
           uri: ${PRODUCT_SERVICE_URL:http://localhost:8083}
@@ -28,6 +41,10 @@ spring:
             - Path=/api/products/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: inventory-service
           uri: ${INVENTORY_SERVICE_URL:http://localhost:8084}
@@ -35,6 +52,10 @@ spring:
             - Path=/api/inventory/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: order-service
           uri: ${ORDER_SERVICE_URL:http://localhost:8086}
@@ -42,6 +63,10 @@ spring:
             - Path=/api/orders/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: notification-service
           uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
@@ -49,6 +74,10 @@ spring:
             - Path=/api/notifications/**
           filters:
             - StripPrefix=1
+            - name: RequestRateLimiter
+              args:
+                rate-limiter: "#{@redisRateLimiter}"
+                key-resolver: "#{@remoteAddressKeyResolver}"
 
         - id: auth-service-docs
           uri: ${AUTH_SERVICE_URL:http://localhost:8081}
@@ -123,3 +152,9 @@ management:
   metrics:
     tags:
       application: ${spring.application.name}
+
+app:
+  rate-limit:
+    replenish-rate: ${GATEWAY_RATE_LIMIT_REPLENISH_RATE:10}
+    burst-capacity: ${GATEWAY_RATE_LIMIT_BURST_CAPACITY:20}
+    requested-tokens: ${GATEWAY_RATE_LIMIT_REQUESTED_TOKENS:1}

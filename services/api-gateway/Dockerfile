@@ -3,7 +3,7 @@
 FROM maven:3.9.9-eclipse-temurin-17 AS builder
 WORKDIR /workspace
 COPY . .
-RUN mvn -B -ntp -U -pl services/api-gateway -am clean package -DskipTests
+RUN --mount=type=cache,target=/root/.m2 mvn -B -ntp -pl services/api-gateway -am clean package -DskipTests
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app

@@ -45,7 +45,7 @@ Environment variables:
 3. Create traffic (order flow script or manual orders) and inspect notification logs:
 
 ```powershell
-Get-Content .\.logs\notification-service.out.log -Tail 200
+Get-Content .\.logs\notification-service.app.log -Tail 200
 ```
 
 4. Expected behavior:

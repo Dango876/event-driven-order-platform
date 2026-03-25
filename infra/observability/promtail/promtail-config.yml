@@ -9,32 +9,17 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: edop-out-logs
+  - job_name: edop-app-logs
     static_configs:
       - targets:
           - localhost
         labels:
           job: edop-local
-          stream: stdout
-          __path__: /var/log/edop/*.out.log
+          stream: application
+          __path__: /var/log/edop/*.app.log
     pipeline_stages:
       - regex:
           source: filename
-          expression: '.*/(?P<service>[^/]+)\.out\.log'
-      - labels:
-          service:
-
-  - job_name: edop-err-logs
-    static_configs:
-      - targets:
-          - localhost
-        labels:
-          job: edop-local
-          stream: stderr
-          __path__: /var/log/edop/*.err.log
-    pipeline_stages:
-      - regex:
-          source: filename
-          expression: '.*/(?P<service>[^/]+)\.err\.log'
+          expression: '.*/(?P<service>[^/]+)\.app\.log'
       - labels:
           service:

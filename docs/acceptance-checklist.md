@@ -7,7 +7,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 - Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
-Date of latest verification: 2026-03-22 (Europe/Moscow).
+Date of latest verification: 2026-03-23 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -161,7 +161,7 @@ Covered:
   - OTLP endpoint for services: `http://localhost:4318/v1/traces`
 - Logs:
   - Loki readiness: `http://localhost:3100/ready`
-  - Promtail collection from `.logs/*.out.log` and `.logs/*.err.log`
+  - Promtail collection from `.logs/*.app.log`
   - Grafana Explore query verified: `{job="edop-local"}`
 - Dashboard:
   - Grafana: `http://localhost:3000`
@@ -186,6 +186,7 @@ Evidence:
   - `(Invoke-WebRequest http://localhost:8088 -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3000/api/health -UseBasicParsing).StatusCode`
   - `(Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing).Content`
+  - `Get-ChildItem .\.logs\*.app.log`
   - `Invoke-WebRequest http://localhost:9090/api/v1/rules -UseBasicParsing`
 
 ## 9. Load/SLO baseline (local)

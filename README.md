@@ -21,7 +21,9 @@ make dev-up
 ```
 
 Expected result:
-- Infra containers are up (Redpanda, Schema Registry, Postgres, MongoDB, Redis, Prometheus, Alertmanager, Grafana, Loki, Promtail).
+- Full local stack is started with Docker Compose:
+  - infra containers: Redpanda, Schema Registry, Postgres, MongoDB, Redis, Prometheus, Alertmanager, Grafana, Loki, Promtail
+  - application containers: api-gateway, auth-service, user-service, product-service, inventory-service, order-service, notification-service
 - Services are healthy.
 - Gateway is available at `http://localhost:8080`.
 - Swagger UI is available at `http://localhost:8080/swagger-ui.html`.
@@ -32,6 +34,7 @@ Expected result:
 - Loki is available at `http://localhost:3100/ready`.
 - Grafana is available at `http://localhost:3000` (`admin`/`admin` by default).
 - Preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`.
+- Application logs are written to `.logs/*.app.log` and collected by Promtail/Loki.
 
 ## Stop local stack
 
@@ -46,6 +49,10 @@ GNU Make:
 ```powershell
 make dev-down
 ```
+
+Expected result:
+- Docker Compose stops the full local stack.
+- If any supported dev process is still listening on service ports (`8080-8087`, `9091`), `.\dev-down.ps1` also frees those ports.
 
 ## Smoke check
 

@@ -21,9 +21,11 @@ Main stack used:
 
 ## 2) What was completed
 
-- Local one-command startup for Docker Compose:
+- Local one-command startup for full Docker Compose stack:
   - `./dev-up.ps1`
   - `./dev-down.ps1`
+  - `dev-up` now starts infra and all application services as containers
+  - `dev-down` stops Compose stack and frees supported host-run service ports (`8080-8087`, `9091`)
 - User management API baseline in `user-service`:
   - list/get by id
   - create/update/delete
@@ -38,6 +40,7 @@ Main stack used:
   - deployment settings in Helm values/templates to stabilize Redpanda and Schema Registry startup
 - Local observability baseline:
   - Prometheus + Grafana + Loki + Promtail + Jaeger in Docker Compose
+  - containerized Spring Boot services write logs to `.logs/*.app.log`
   - preloaded Grafana dashboard: `EDOP Local / EDOP Local Observability`
   - metrics/logs verification documented in `docs/observability-local-run.md`
   - tracing export via OTLP to Jaeger (`http://localhost:4318/v1/traces`)
@@ -131,8 +134,15 @@ From repository root:
 Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing
 Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing
 Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
+Get-ChildItem .\.logs\*.app.log
 .\dev-down.ps1
 ```
+
+Expected result:
+
+- all infra containers and application containers are healthy
+- gateway, docs, and observability endpoints are reachable
+- fresh application logs are present in `.logs/*.app.log`
 
 ## 5) API and docs
 
