@@ -9,8 +9,7 @@ import com.procurehub.auth.model.User;
 import com.procurehub.auth.repository.UserRepository;
 import com.procurehub.auth.security.JwtService;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +20,6 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
     private final EmailVerificationService emailVerificationService;
@@ -29,14 +27,12 @@ public class AuthService {
     private final UserCreatedEventPublisher userCreatedEventPublisher;
 
     public AuthService(UserRepository userRepository,
-                       AuthenticationManager authenticationManager,
                        JwtService jwtService,
                        RefreshTokenService refreshTokenService,
                        EmailVerificationService emailVerificationService,
                        org.springframework.security.crypto.password.PasswordEncoder passwordEncoder,
                        UserCreatedEventPublisher userCreatedEventPublisher) {
         this.userRepository = userRepository;
-        this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.refreshTokenService = refreshTokenService;
         this.emailVerificationService = emailVerificationService;
@@ -79,9 +75,13 @@ public class AuthService {
             throw new IllegalArgumentException("Email is not confirmed");
         }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        if (!user.isEnabled()) {
+            throw new IllegalArgumentException("User account is disabled");
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid email or password");
+        }
 
         String accessToken = jwtService.generateToken(user);
         String refreshToken = refreshTokenService.issueToken(user);
