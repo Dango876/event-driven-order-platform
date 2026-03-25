@@ -395,6 +395,8 @@ services:
         condition: service_started
       notification-service:
         condition: service_started
+      redis:
+        condition: service_started
       jaeger:
         condition: service_started
     environment:
@@ -404,6 +406,8 @@ services:
       INVENTORY_SERVICE_URL: http://inventory-service:8084
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
       LOGGING_FILE_NAME: /var/log/edop/api-gateway.app.log
     volumes:

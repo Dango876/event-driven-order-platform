@@ -114,6 +114,31 @@ function Get-ListeningProcessId {
     return [int]$conn.OwningProcess
 }
 
+function Invoke-ComposeBuildWithRetry {
+    param(
+        [Parameter(Mandatory = $true)][string]$ServiceName,
+        [int]$MaxAttempts = 3,
+        [int]$DelaySec = 5
+    )
+
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+        Write-Host ("Building {0} (attempt {1}/{2})..." -f $ServiceName, $attempt, $MaxAttempts)
+        docker compose -f $composeFile build $ServiceName | Out-Host
+
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host ("[OK] Built {0}" -f $ServiceName)
+            return
+        }
+
+        if ($attempt -lt $MaxAttempts) {
+            Write-Host ("[WARN] Build failed for {0}, retrying in {1}s..." -f $ServiceName, $DelaySec)
+            Start-Sleep -Seconds $DelaySec
+        }
+    }
+
+    throw "docker compose build failed for $ServiceName"
+}
+
 $stackPorts = @(
     @{ Name = "Gateway"; Port = 8080 },
     @{ Name = "Auth Service"; Port = 8081 },
@@ -141,8 +166,23 @@ $stackPorts = @(
     @{ Name = "Jaeger OTLP"; Port = 4318 }
 )
 
+$buildServices = @(
+    "auth-service",
+    "user-service",
+    "product-service",
+    "inventory-service",
+    "order-service",
+    "notification-service",
+    "api-gateway"
+)
+
+Write-Host "Building application images sequentially..."
+foreach ($service in $buildServices) {
+    Invoke-ComposeBuildWithRetry -ServiceName $service
+}
+
 Write-Host "Starting full local stack with Docker Compose..."
-docker compose -f $composeFile up -d --build | Out-Host
+docker compose -f $composeFile up -d --no-build | Out-Host
 if ($LASTEXITCODE -ne 0) {
     Write-Host ""
     Write-Host "docker compose failed. Port occupancy snapshot:"
