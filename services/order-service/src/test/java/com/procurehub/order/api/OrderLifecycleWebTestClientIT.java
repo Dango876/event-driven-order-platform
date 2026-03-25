@@ -6,6 +6,7 @@ import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.UpdateOrderStatusRequest;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.support.TestJwtFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -40,6 +41,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
         "management.tracing.sampling.probability=0.0"
 })
 class OrderLifecycleWebTestClientIT {
+
+    private static final String USER_AUTHORIZATION = "Bearer " + TestJwtFactory.userToken();
+    private static final String ADMIN_AUTHORIZATION = "Bearer " + TestJwtFactory.adminToken();
 
     @Container
     static final PostgreSQLContainer<?> POSTGRES =
@@ -106,6 +110,7 @@ class OrderLifecycleWebTestClientIT {
 
         EntityExchangeResult<Map> createdResult = webTestClient.post()
                 .uri("/orders")
+                .header("Authorization", USER_AUTHORIZATION)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(create)
                 .exchange()
@@ -129,6 +134,7 @@ class OrderLifecycleWebTestClientIT {
 
         webTestClient.get()
                 .uri("/orders/{id}", orderId)
+                .header("Authorization", USER_AUTHORIZATION)
                 .exchange()
                 .expectStatus().isOk()
                 .expectBody()
@@ -143,6 +149,7 @@ class OrderLifecycleWebTestClientIT {
 
         webTestClient.patch()
                 .uri("/orders/{id}/status", orderId)
+                .header("Authorization", ADMIN_AUTHORIZATION)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(request)
                 .exchange()
