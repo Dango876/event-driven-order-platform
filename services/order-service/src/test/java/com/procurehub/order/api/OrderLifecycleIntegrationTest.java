@@ -7,6 +7,7 @@ import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.UpdateOrderStatusRequest;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.support.TestJwtFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -30,6 +31,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class OrderLifecycleIntegrationTest {
+
+    private static final String USER_AUTHORIZATION = "Bearer " + TestJwtFactory.userToken();
+    private static final String ADMIN_AUTHORIZATION = "Bearer " + TestJwtFactory.adminToken();
 
     @Autowired
     private MockMvc mockMvc;
@@ -69,6 +73,7 @@ class OrderLifecycleIntegrationTest {
         createRequest.setQuantity(1);
 
         MvcResult createResult = mockMvc.perform(post("/orders")
+                        .header("Authorization", USER_AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isOk())
@@ -84,6 +89,7 @@ class OrderLifecycleIntegrationTest {
         patchStatus(orderId, "COMPLETED", "Status changed: SHIPPED -> COMPLETED");
 
         mockMvc.perform(get("/orders/{orderId}", orderId))
+                .header("Authorization", USER_AUTHORIZATION)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
@@ -95,6 +101,7 @@ class OrderLifecycleIntegrationTest {
         request.setStatus(newStatus);
 
         mockMvc.perform(patch("/orders/{orderId}/status", orderId)
+                        .header("Authorization", ADMIN_AUTHORIZATION)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())

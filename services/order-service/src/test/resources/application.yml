@@ -33,3 +33,6 @@ inventory:
   grpc:
     host: localhost
     port: 9091
+
+jwt:
+  secret: VGhpc0lzRGV2T25seVN1cGVyU2VjcmV0S2V5VGhhdE11c3RCZUNoYW5nZWRJblByb2QxMjM0NQ==
