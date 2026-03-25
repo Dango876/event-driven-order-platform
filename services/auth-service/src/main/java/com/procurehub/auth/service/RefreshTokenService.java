@@ -3,6 +3,7 @@ package com.procurehub.auth.service;
 import com.procurehub.auth.model.RefreshToken;
 import com.procurehub.auth.model.User;
 import com.procurehub.auth.repository.RefreshTokenRepository;
+import com.procurehub.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
@@ -16,21 +17,26 @@ import java.util.UUID;
 public class RefreshTokenService {
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final UserRepository userRepository;
 
     @Value("${jwt.refresh-token-expiration-days}")
     private long refreshTokenExpirationDays;
 
-    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository) {
+    public RefreshTokenService(RefreshTokenRepository refreshTokenRepository,
+                               UserRepository userRepository) {
         this.refreshTokenRepository = refreshTokenRepository;
+        this.userRepository = userRepository;
     }
 
     @Transactional
     public String issueToken(User user) {
-        revokeActiveTokens(user.getId());
+        User managedUser = userRepository.getReferenceById(user.getId());
+
+        revokeActiveTokens(managedUser.getId());
 
         RefreshToken refreshToken = new RefreshToken(
                 generateToken(),
-                user,
+                managedUser,
                 LocalDateTime.now().plusDays(refreshTokenExpirationDays),
                 false,
                 LocalDateTime.now()

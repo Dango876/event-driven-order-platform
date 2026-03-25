@@ -99,5 +99,62 @@ Expected result:
 - `docs/observability-local-run.md`
 - `docs/order-service-local-verification.md`
 - `docs/project-passport.md`
+- `docs/submission-report.md`
 - `docs/swagger-openapi-endpoints.md`
 - `docs/tls-secrets-k8s-baseline.md`
+
+## RBAC foundation
+
+JWT-based RBAC is enabled for business services and validated through the gateway at `http://localhost:8080`.
+
+Current access model:
+
+- `auth-service`
+  - authenticated users can call `/api/auth/me`
+  - only `ROLE_ADMIN` can call `/api/auth/admin/**`
+- `product-service`
+  - `GET /api/products` and `GET /api/products/{id}` are available for `ROLE_USER`, `ROLE_MANAGER`, `ROLE_ADMIN`
+  - product write operations are restricted to `ROLE_ADMIN`
+- `user-service`
+  - all `/api/users` endpoints are restricted to `ROLE_ADMIN`
+- `order-service`
+  - `POST /api/orders`, `GET /api/orders`, `GET /api/orders/{id}` are available for `ROLE_USER` and `ROLE_ADMIN`
+  - reserve/release/stock/status-management endpoints are restricted to `ROLE_ADMIN`
+
+Gateway routing covers both collection and nested API paths:
+
+- `/api/auth` and `/api/auth/**`
+- `/api/users` and `/api/users/**`
+- `/api/products` and `/api/products/**`
+- `/api/inventory` and `/api/inventory/**`
+- `/api/orders` and `/api/orders/**`
+- `/api/notifications` and `/api/notifications/**`
+
+## RBAC smoke check
+
+Example verification flow through the gateway:
+
+```powershell
+$userLoginBody = @{ email = "rbac-user-2@example.com"; password = "Password123!" } | ConvertTo-Json -Compress
+$adminLoginBody = @{ email = "rbac-admin-2@example.com"; password = "Password123!" } | ConvertTo-Json -Compress
+
+$userLogin = Invoke-RestMethod -Method POST -Uri "http://localhost:8080/api/auth/login" -ContentType "application/json" -Body $userLoginBody
+$adminLogin = Invoke-RestMethod -Method POST -Uri "http://localhost:8080/api/auth/login" -ContentType "application/json" -Body $adminLoginBody
+
+$USER_TOKEN = $userLogin.accessToken
+$ADMIN_TOKEN = $adminLogin.accessToken
+
+curl.exe -s -o NUL -w "%{http_code}`n" -H "Authorization: Bearer $USER_TOKEN" http://localhost:8080/api/auth/me
+curl.exe -s -o NUL -w "%{http_code}`n" -H "Authorization: Bearer $USER_TOKEN" http://localhost:8080/api/users
+curl.exe -s -o NUL -w "%{http_code}`n" -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8080/api/users
+curl.exe -s -o NUL -w "%{http_code}`n" -H "Authorization: Bearer $USER_TOKEN" http://localhost:8080/api/orders
+curl.exe -s -o NUL -w "%{http_code}`n" -H "Authorization: Bearer $ADMIN_TOKEN" http://localhost:8080/api/orders/stock/1001
+```
+
+Expected result:
+
+- `/api/auth/me` with `USER` -> `200`
+- `/api/users` with `USER` -> `403`
+- `/api/users` with `ADMIN` -> `200`
+- `/api/orders` with `USER` -> `200`
+- `/api/orders/stock/1001` with `ADMIN` -> `200`

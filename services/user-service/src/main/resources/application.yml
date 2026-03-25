@@ -51,3 +51,5 @@ app:
     topics:
       user-created: ${KAFKA_TOPIC_USER_CREATED:user.created}
 
+jwt:
+  secret: ${JWT_SECRET:VGhpc0lzRGV2T25seVN1cGVyU2VjcmV0S2V5VGhhdE11c3RCZUNoYW5nZWRJblByb2QxMjM0NQ==}

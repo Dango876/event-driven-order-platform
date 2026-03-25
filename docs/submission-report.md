@@ -61,6 +61,14 @@ Main stack used:
 - OAuth2 login hardening baseline:
   - social OAuth2 login flow covered with unit tests in `auth-service`
   - new OAuth-created users now publish `user.created` event for cross-service consistency
+- RBAC foundation across gateway and business services:
+  - `auth-service` issues HS256 JWTs with roles in claim `roles`
+  - `product-service`, `user-service`, and `order-service` validate the same JWT secret as resource servers
+  - `product-service` write operations are restricted to `ROLE_ADMIN`
+  - `user-service` `/users` endpoints are restricted to `ROLE_ADMIN`
+  - `order-service` user order flow is available for `ROLE_USER`/`ROLE_ADMIN`, while reserve/release/stock/status-management endpoints are restricted to `ROLE_ADMIN`
+  - gateway route predicates were widened to cover both collection and nested paths, for example `/api/users` and `/api/users/**`
+  - RBAC verification through gateway completed on `2026-03-25` with expected `200/403` behavior for `auth-service`, `user-service`, and `order-service`
 - Load/SLO baseline tooling:
   - k6 scenario: `infra/performance/k6-gateway-baseline.js`
   - run helper: `infra/performance/run-load-baseline.ps1`
@@ -193,13 +201,14 @@ Detailed docs:
 - Kubernetes scaling + no-downtime rollout baseline: done
 - CI API integration test baseline (Testcontainers + WebTestClient): done
 - CD workflow baseline (build/push + Helm dev/prod path): done
+- RBAC foundation via gateway: done
 
 ## 7) Notes
 
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
 - Long-run SLA evidence was generated successfully in k3d profile on `2026-03-22` and archived under `infra/performance/evidence/`.
-- Remaining next-iteration item is operational on-call process rollout.
+- Remaining next-iteration items are owner-scoped authorization rules for user/order data and operational on-call process rollout.
 
 ## 8) CI/Security evidence
 
