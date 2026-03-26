@@ -2,10 +2,12 @@ package com.procurehub.order.api;
 
 import com.procurehub.grpc.inventory.v1.CheckAndReserveResponse;
 import com.procurehub.grpc.inventory.v1.ReleaseReservationResponse;
+import com.procurehub.inventory.avro.InventoryReservedEvent;
 import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.UpdateOrderStatusRequest;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.kafka.InventoryEventsListener;
 import com.procurehub.order.support.TestJwtFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -61,6 +64,9 @@ class OrderLifecycleWebTestClientIT {
 
     @Autowired
     private WebTestClient webTestClient;
+
+    @Autowired
+    private InventoryEventsListener inventoryEventsListener;
 
     @MockBean
     private InventoryGrpcClient inventoryGrpcClient;
@@ -118,8 +124,8 @@ class OrderLifecycleWebTestClientIT {
                 .expectBody(Map.class)
                 .value(body -> {
                     assertNotNull(body);
-                    assertEquals("RESERVED", body.get("status"));
-                    assertEquals("Inventory reserved", body.get("statusMessage"));
+                    assertEquals("RESERVATION_PENDING", body.get("status"));
+                    assertEquals("Reservation requested", body.get("statusMessage"));
                 })
                 .returnResult();
 
@@ -127,6 +133,18 @@ class OrderLifecycleWebTestClientIT {
         Map<String, Object> created = createdResult.getResponseBody();
         assertNotNull(created);
         Long orderId = ((Number) created.get("id")).longValue();
+
+        confirmReservation(orderId, 2001L, 1);
+
+        webTestClient.get()
+                .uri("/orders/{id}", orderId)
+                .header("Authorization", USER_AUTHORIZATION)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(orderId.intValue())
+                .jsonPath("$.status").isEqualTo("RESERVED")
+                .jsonPath("$.statusMessage").isEqualTo("Inventory reserved");
 
         patchStatus(orderId, "PAID", "Status changed: RESERVED -> PAID");
         patchStatus(orderId, "SHIPPED", "Status changed: PAID -> SHIPPED");
@@ -141,6 +159,20 @@ class OrderLifecycleWebTestClientIT {
                 .jsonPath("$.id").isEqualTo(orderId.intValue())
                 .jsonPath("$.status").isEqualTo("COMPLETED")
                 .jsonPath("$.statusMessage").isEqualTo("Status changed: SHIPPED -> COMPLETED");
+    }
+
+    private void confirmReservation(Long orderId, Long productId, int quantity) {
+        InventoryReservedEvent event = InventoryReservedEvent.newBuilder()
+                .setOrderId(orderId)
+                .setProductId(productId)
+                .setQuantity(quantity)
+                .setAvailableQuantity(100)
+                .setReservedQuantity(quantity)
+                .setMessage("reserved")
+                .setReservedAt(LocalDateTime.now().toString())
+                .build();
+
+        inventoryEventsListener.onInventoryReserved(event);
     }
 
     private void patchStatus(Long orderId, String newStatus, String expectedMessage) {

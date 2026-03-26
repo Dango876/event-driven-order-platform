@@ -28,6 +28,7 @@ app:
       order-created: order.created
       order-status-changed: order.status-changed
       inventory-reserved: inventory.reserved
+      inventory-reserve-failed: inventory.reserve-failed
 
 inventory:
   grpc:

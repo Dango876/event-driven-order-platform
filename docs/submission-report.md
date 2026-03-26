@@ -69,6 +69,19 @@ Main stack used:
   - `order-service` user order flow is available for `ROLE_USER`/`ROLE_ADMIN`, while reserve/release/stock/status-management endpoints are restricted to `ROLE_ADMIN`
   - gateway route predicates were widened to cover both collection and nested paths, for example `/api/users` and `/api/users/**`
   - RBAC verification through gateway completed on `2026-03-25` with expected `200/403` behavior for `auth-service`, `user-service`, and `order-service`
+- Order saga runtime verification and cleanup completed on `2026-03-26`:
+  - Flyway migration `V3__allow_saga_order_statuses.sql` was applied successfully to extend the order status check constraint for saga statuses
+  - happy-path verification through gateway confirmed:
+    - `RESERVATION_PENDING -> RESERVED -> PAID -> SHIPPED -> COMPLETED`
+    - invalid transition `COMPLETED -> CANCELLED` is rejected with HTTP `409`
+  - fail-path verification through gateway confirmed:
+    - order creation returns `RESERVATION_PENDING`
+    - Kafka-driven inventory rejection moves the order to `RESERVATION_FAILED`
+  - Kafka and Schema Registry evidence confirmed the expected event flow:
+    - topics: `inventory.reserve-failed`, `inventory.reserved`, `order.created`, `order.status-changed`
+    - subjects: `inventory.reserve-failed-value`, `inventory.reserved-value`, `order.created-value`, `order.status-changed-value`
+  - `order-service` fail-path handling was cleaned up to use a single event-driven path; warning `Received inventory.reserve-failed for missing orderId=...` is no longer reproduced in runtime logs
+  - local `order-service` test run on Windows completed with `43` tests, `0` failures, `0` errors, `1` skipped (`OrderLifecycleWebTestClientIT`, skipped only because of local Testcontainers/Docker Desktop detection)
 - Load/SLO baseline tooling:
   - k6 scenario: `infra/performance/k6-gateway-baseline.js`
   - run helper: `infra/performance/run-load-baseline.ps1`
@@ -122,14 +135,15 @@ Verification commands:
 ```powershell
 kubectl get pods -n edop-dev
 .\infra\k8s\smoke-check.ps1
-.\infra\k8s\order-lifecycle-check.ps1 -RequestTimeoutSec 90 -OrderCreateRetries 5 -RetryDelaySec 5
 ```
 
 Expected checks:
 
 - smoke check returns HTTP 200 for health, Swagger UI, and API docs endpoints
-- order lifecycle check passes all transitions:
-  - `RESERVED -> PAID -> SHIPPED -> COMPLETED`
+- JWT-protected order verification steps from `docs/order-service-local-verification.md` pass against the exposed gateway
+- order lifecycle verification confirms:
+  - `RESERVATION_PENDING -> RESERVED -> PAID -> SHIPPED -> COMPLETED`
+  - fail-path `RESERVATION_PENDING -> RESERVATION_FAILED`
   - invalid transition is rejected with `409`
 
 ## 4) Repro steps (docker-compose)
@@ -151,6 +165,7 @@ Expected result:
 - all infra containers and application containers are healthy
 - gateway, docs, and observability endpoints are reachable
 - fresh application logs are present in `.logs/*.app.log`
+- JWT-protected order verification from `docs/order-service-local-verification.md` passes end-to-end
 
 ## 5) API and docs
 
@@ -191,7 +206,7 @@ Detailed docs:
 - k3d/k8s local deployment: done
 - Swagger/OpenAPI availability via gateway: done
 - End-to-end order lifecycle: done
-- Reproducible verification scripts: done
+- Documented reproducible verification: done
 - Observability baseline (metrics + logs + dashboard): done
 - Alerting baseline (Prometheus rules + Alertmanager): done
 - External webhook alert routing baseline: done
@@ -208,6 +223,8 @@ Detailed docs:
 - This is an educational MVP focused on local reproducibility and service integration.
 - Security scans are integrated in CI and currently passing.
 - Long-run SLA evidence was generated successfully in k3d profile on `2026-03-22` and archived under `infra/performance/evidence/`.
+- Local runtime saga verification was repeated on `2026-03-26` after the fail-path cleanup; runtime logs now show a clean single event-driven failure path without the previous missing-order warning.
+- Local Windows environment still skips `OrderLifecycleWebTestClientIT` because Testcontainers does not detect Docker Desktop correctly in this setup; this is a local infrastructure limitation, not a confirmed application defect.
 - Remaining next-iteration items are owner-scoped authorization rules for user/order data and operational on-call process rollout.
 
 ## 8) CI/Security evidence

@@ -45,6 +45,7 @@ app:
       order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
       order-status-changed: ${KAFKA_TOPIC_ORDER_STATUS_CHANGED:order.status-changed}
       inventory-reserved: ${KAFKA_TOPIC_INVENTORY_RESERVED:inventory.reserved}
+      inventory-reserve-failed: ${KAFKA_TOPIC_INVENTORY_RESERVE_FAILED:inventory.reserve-failed}
 
 management:
   endpoints:

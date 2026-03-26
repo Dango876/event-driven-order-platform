@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "InventoryReservationFailedEvent",
+  "namespace": "com.procurehub.inventory.avro",
+  "fields": [
+    { "name": "orderId", "type": "long" },
+    { "name": "productId", "type": "long" },
+    { "name": "quantity", "type": "int" },
+    { "name": "message", "type": "string" },
+    { "name": "failedAt", "type": "string" }
+  ]
+}

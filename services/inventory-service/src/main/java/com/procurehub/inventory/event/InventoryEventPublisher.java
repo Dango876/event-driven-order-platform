@@ -1,5 +1,6 @@
 package com.procurehub.inventory.event;
 
+import com.procurehub.inventory.avro.InventoryReservationFailedEvent;
 import com.procurehub.inventory.avro.InventoryReservedEvent;
 import org.apache.avro.specific.SpecificRecord;
 import org.slf4j.Logger;
@@ -18,13 +19,16 @@ public class InventoryEventPublisher {
 
     private final KafkaTemplate<String, SpecificRecord> kafkaTemplate;
     private final String inventoryReservedTopic;
+    private final String inventoryReserveFailedTopic;
 
     public InventoryEventPublisher(
             KafkaTemplate<String, SpecificRecord> kafkaTemplate,
-            @Value("${app.kafka.topics.inventory-reserved}") String inventoryReservedTopic
+            @Value("${app.kafka.topics.inventory-reserved}") String inventoryReservedTopic,
+            @Value("${app.kafka.topics.inventory-reserve-failed}") String inventoryReserveFailedTopic
     ) {
         this.kafkaTemplate = kafkaTemplate;
         this.inventoryReservedTopic = inventoryReservedTopic;
+        this.inventoryReserveFailedTopic = inventoryReserveFailedTopic;
     }
 
     public void publishInventoryReserved(
@@ -59,6 +63,33 @@ public class InventoryEventPublisher {
             log.info("Published inventory.reserved for orderId={}, productId={}", orderId, productId);
         } catch (Exception e) {
             log.error("Failed to publish inventory.reserved for orderId={}", orderId, e);
+        }
+    }
+
+    public void publishInventoryReservationFailed(
+            long orderId,
+            long productId,
+            int quantity,
+            String message
+    ) {
+        if (orderId <= 0) {
+            log.debug("Skip inventory.reserve-failed publish: orderId={}", orderId);
+            return;
+        }
+
+        InventoryReservationFailedEvent event = InventoryReservationFailedEvent.newBuilder()
+                .setOrderId(orderId)
+                .setProductId(productId)
+                .setQuantity(quantity)
+                .setMessage(message == null || message.isBlank() ? "reservation failed" : message)
+                .setFailedAt(LocalDateTime.now().toString())
+                .build();
+
+        try {
+            kafkaTemplate.send(inventoryReserveFailedTopic, String.valueOf(orderId), event).get(5, TimeUnit.SECONDS);
+            log.info("Published inventory.reserve-failed for orderId={}, productId={}", orderId, productId);
+        } catch (Exception e) {
+            log.error("Failed to publish inventory.reserve-failed for orderId={}", orderId, e);
         }
     }
 }

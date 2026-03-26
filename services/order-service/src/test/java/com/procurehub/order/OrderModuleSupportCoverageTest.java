@@ -1,5 +1,6 @@
 package com.procurehub.order;
 
+import com.procurehub.inventory.avro.InventoryReservationFailedEvent;
 import com.procurehub.inventory.avro.InventoryReservedEvent;
 import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.OrderResponse;
@@ -10,6 +11,7 @@ import com.procurehub.order.api.dto.UpdateOrderStatusRequest;
 import com.procurehub.order.api.error.ApiError;
 import com.procurehub.order.config.GrpcClientConfig;
 import com.procurehub.order.kafka.InventoryEventsListener;
+import com.procurehub.order.service.OrderService;
 import io.grpc.ManagedChannel;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +20,8 @@ import java.time.LocalDateTime;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class OrderModuleSupportCoverageTest {
 
@@ -89,9 +93,11 @@ class OrderModuleSupportCoverageTest {
     }
 
     @Test
-    void inventoryListenerShouldHandleEventWithoutThrowing() {
-        InventoryEventsListener listener = new InventoryEventsListener();
-        InventoryReservedEvent event = InventoryReservedEvent.newBuilder()
+    void inventoryListenerShouldDelegateEventsWithoutThrowing() {
+        OrderService orderService = mock(OrderService.class);
+        InventoryEventsListener listener = new InventoryEventsListener(orderService);
+
+        InventoryReservedEvent reservedEvent = InventoryReservedEvent.newBuilder()
                 .setOrderId(1L)
                 .setProductId(2001L)
                 .setQuantity(1)
@@ -101,6 +107,18 @@ class OrderModuleSupportCoverageTest {
                 .setReservedAt(LocalDateTime.now().toString())
                 .build();
 
-        assertDoesNotThrow(() -> listener.onInventoryReserved(event));
+        InventoryReservationFailedEvent failedEvent = InventoryReservationFailedEvent.newBuilder()
+                .setOrderId(2L)
+                .setProductId(2002L)
+                .setQuantity(2)
+                .setMessage("not enough stock")
+                .setFailedAt(LocalDateTime.now().toString())
+                .build();
+
+        assertDoesNotThrow(() -> listener.onInventoryReserved(reservedEvent));
+        assertDoesNotThrow(() -> listener.onInventoryReservationFailed(failedEvent));
+
+        verify(orderService).handleInventoryReserved(1L, "reserved");
+        verify(orderService).handleInventoryReservationFailed(2L, "not enough stock");
     }
 }

@@ -55,6 +55,13 @@ public class InventoryGrpcService extends InventoryServiceGrpc.InventoryServiceI
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (NotEnoughStockException ex) {
+            inventoryEventPublisher.publishInventoryReservationFailed(
+                    request.getOrderId(),
+                    request.getProductId(),
+                    request.getQuantity(),
+                    ex.getMessage()
+            );
+
             CheckAndReserveResponse response = CheckAndReserveResponse.newBuilder()
                     .setSuccess(false)
                     .setProductId(request.getProductId())

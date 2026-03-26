@@ -3,23 +3,27 @@ package com.procurehub.order.api;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.procurehub.grpc.inventory.v1.CheckAndReserveResponse;
+import com.procurehub.inventory.avro.InventoryReservedEvent;
 import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.UpdateOrderStatusRequest;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.kafka.InventoryEventsListener;
 import com.procurehub.order.support.TestJwtFactory;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.http.MediaType;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+
+import java.time.LocalDateTime;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -40,6 +44,9 @@ class OrderLifecycleIntegrationTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private InventoryEventsListener inventoryEventsListener;
 
     @MockBean
     private OrderEventPublisher orderEventPublisher;
@@ -66,7 +73,7 @@ class OrderLifecycleIntegrationTest {
     }
 
     @Test
-    void shouldCompleteOrderLifecycleFromReservedToCompleted() throws Exception {
+    void shouldCompleteOrderLifecycleAfterReservationConfirmation() throws Exception {
         CreateOrderRequest createRequest = new CreateOrderRequest();
         createRequest.setUserId(101L);
         createRequest.setProductId(2001L);
@@ -77,12 +84,21 @@ class OrderLifecycleIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("RESERVED"))
-                .andExpect(jsonPath("$.statusMessage").value("Inventory reserved"))
+                .andExpect(jsonPath("$.status").value("RESERVATION_PENDING"))
+                .andExpect(jsonPath("$.statusMessage").value("Reservation requested"))
                 .andReturn();
 
         JsonNode createJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
         long orderId = createJson.get("id").asLong();
+
+        confirmReservation(orderId, 2001L, 1);
+
+        mockMvc.perform(get("/orders/{orderId}", orderId)
+                        .header("Authorization", USER_AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId))
+                .andExpect(jsonPath("$.status").value("RESERVED"))
+                .andExpect(jsonPath("$.statusMessage").value("Inventory reserved"));
 
         patchStatus(orderId, "PAID", "Status changed: RESERVED -> PAID");
         patchStatus(orderId, "SHIPPED", "Status changed: PAID -> SHIPPED");
@@ -94,6 +110,20 @@ class OrderLifecycleIntegrationTest {
                 .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.status").value("COMPLETED"))
                 .andExpect(jsonPath("$.statusMessage").value("Status changed: SHIPPED -> COMPLETED"));
+    }
+
+    private void confirmReservation(long orderId, long productId, int quantity) {
+        InventoryReservedEvent event = InventoryReservedEvent.newBuilder()
+                .setOrderId(orderId)
+                .setProductId(productId)
+                .setQuantity(quantity)
+                .setAvailableQuantity(25)
+                .setReservedQuantity(quantity)
+                .setMessage("reserved")
+                .setReservedAt(LocalDateTime.now().toString())
+                .build();
+
+        inventoryEventsListener.onInventoryReserved(event);
     }
 
     private void patchStatus(long orderId, String newStatus, String expectedMessage) throws Exception {
