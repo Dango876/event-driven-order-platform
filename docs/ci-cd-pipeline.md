@@ -17,7 +17,15 @@ CI pipeline includes:
   - `OrderLifecycleWebTestClientIT`
   - Testcontainers PostgreSQL
   - Spring `WebTestClient`
-- JaCoCo report and coverage gate (`>= 80%`)
+- JaCoCo reports for all application services:
+  - `api-gateway`
+  - `auth-service`
+  - `user-service`
+  - `product-service`
+  - `inventory-service`
+  - `order-service`
+  - `notification-service`
+- Aggregated platform instruction coverage gate (`>= 80%`) across all listed services
 
 ## CD (push to main/master or manual dispatch)
 
@@ -52,3 +60,4 @@ Optional:
 - Helm chart path used by CD: `infra/helm/edop`.
 - Prod deploy enables ingress TLS in chart values and uses secret `edop-gateway-tls`.
 - Prod deploy also enables HPA/PDB scaling baseline for availability and no-downtime rolling updates.
+- Latest local aggregated JaCoCo result for service modules: `81.06%` instruction coverage (`2026-03-27`).

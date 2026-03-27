@@ -118,6 +118,13 @@ services:
     volumes:
       - mongo-data:/data/db
 
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: edop-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
   redis:
     image: redis:7-alpine
     container_name: edop-redis
@@ -363,6 +370,10 @@ services:
         condition: service_started
       redis:
         condition: service_started
+      mongodb:
+        condition: service_started
+      mailpit:
+        condition: service_started
       jaeger:
         condition: service_started
     environment:
@@ -370,6 +381,10 @@ services:
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      MONGODB_URI: mongodb://mongodb:27017/notification_db
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      NOTIFICATION_FROM: no-reply@procurehub.local
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
       LOGGING_FILE_NAME: /var/log/edop/notification-service.app.log
     volumes:

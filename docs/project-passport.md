@@ -1,8 +1,8 @@
 # Project Passport (MVP)
 
-Date: 2026-03-20 (Europe/Moscow)
+Date: 2026-03-27 (Europe/Moscow)
 Repository: `Dango876/event-driven-order-platform`
-Stage: MVP / acceptance baseline complete
+Stage: MVP / acceptance baseline complete, including local k3d + Helm verification
 
 ## 1) Project summary
 
@@ -31,6 +31,10 @@ Core stack:
 - Order lifecycle flow with transition checks:
   - `RESERVED -> PAID -> SHIPPED -> COMPLETED`
   - invalid transition rejection (`409`) verified.
+- Notification-service runtime flow:
+  - Kafka consumption for `user.created`, `order.created`, `order.status-changed`
+  - MongoDB persistence for user projections and notification records
+  - local email delivery verified through Mailpit
 - Local observability baseline:
   - metrics (Prometheus), logs (Loki/Promtail), tracing (Jaeger), dashboards (Grafana).
 - Alerting baseline:
@@ -47,8 +51,13 @@ Core stack:
   - rolling update defaults with `maxUnavailable: 0` + `maxSurge: 1`
   - HPA baseline (`min=2`, `max=4`) for production CD profile
   - PDB baseline for application workloads
+- Local k3d + Helm baseline:
+  - `mailpit` included in Helm values for local cluster runtime
+  - `notification-service` probes aligned to lightweight `/health` for stable local rollout
+  - local Windows recovery path documented for `mongo:7` import via node-level `ctr`
 - CI/CD baseline:
   - CI + Security workflows green.
+  - CI enforces aggregated JaCoCo instruction coverage `>= 80%` across all seven application services.
   - CD workflow defined in `.github/workflows/cd.yml`.
   - API integration test with Testcontainers + WebTestClient in `order-service`.
 
@@ -85,6 +94,7 @@ Detailed acceptance evidence:
 - Mandatory acceptance baseline: completed.
 - CI/Security baseline: completed and green.
 - Local deploy/repro and observability baseline: completed.
+- Local k3d + Helm verification baseline: completed.
 - K8s TLS/secrets deployment baseline: completed.
 - K8s scaling + no-downtime rollout baseline: completed.
 

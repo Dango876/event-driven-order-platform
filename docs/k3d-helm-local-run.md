@@ -31,6 +31,8 @@ Example secret files:
 make k3d-up
 ```
 
+Do not run `.\dev-up.ps1` while the local `k3d` stack is active. Both runtimes expose the gateway on host port `8080`.
+
 What this does:
 - creates `k3d` cluster `edop` (if missing)
 - builds 7 service images from local source
@@ -77,6 +79,26 @@ kubectl logs -n edop-dev deployment/order-service --tail=200
 
 ```powershell
 helm upgrade --install edop .\infra\helm\edop -n edop-dev -f .\infra\helm\values\dev.yaml --wait --timeout 10m
+```
+
+- If local Windows + `k3d` leaves `mongodb` in `ImagePullBackOff`, import `mongo:7` directly into node containerd and restart dependent deployments:
+
+```powershell
+docker exec k3d-edop-server-0 ctr -n k8s.io images pull docker.io/library/mongo:7
+docker exec k3d-edop-agent-0 ctr -n k8s.io images pull docker.io/library/mongo:7
+kubectl delete pod -n edop-dev -l app.kubernetes.io/name=mongodb
+kubectl rollout status deployment/mongodb -n edop-dev --timeout=180s
+kubectl rollout restart deployment/product-service -n edop-dev
+kubectl rollout restart deployment/notification-service -n edop-dev
+kubectl rollout status deployment/product-service -n edop-dev --timeout=180s
+kubectl rollout status deployment/notification-service -n edop-dev --timeout=180s
+.\infra\k8s\smoke-check.ps1
+```
+
+- If `notification-service` was manually patched earlier and Helm reports server-side apply conflicts on probe fields, rerun upgrade with conflict takeover:
+
+```powershell
+helm upgrade edop .\infra\helm\edop -n edop-dev --force-conflicts
 ```
 
 - If `redpanda` / `schema-registry` are stuck in `ContainerCreating` on Windows:

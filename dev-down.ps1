@@ -45,6 +45,9 @@ function Stop-DevProcessOnPort {
         }
         else {
             Write-Host "[WARN] $Name port $Port is still owned by pid=$($proc.Id) process=$($proc.ProcessName). Not stopping automatically."
+            if ($Port -eq 8080 -and $procName -in @("wslrelay", "com.docker.backend")) {
+                Write-Host "[HINT] Port 8080 is likely held by the local k3d load balancer. Run .\\infra\\k8s\\k3d-down.ps1 before .\\dev-up.ps1 if you want the Docker Compose stack."
+            }
         }
     }
 }

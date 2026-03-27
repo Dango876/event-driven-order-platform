@@ -114,6 +114,16 @@ function Get-ListeningProcessId {
     return [int]$conn.OwningProcess
 }
 
+function Test-K3dGatewayPortConflict {
+    try {
+        $serverLb = docker ps --filter "name=k3d-edop-serverlb" --format "{{.Names}}" 2>$null
+        return ($LASTEXITCODE -eq 0 -and $serverLb -match "k3d-edop-serverlb")
+    }
+    catch {
+        return $false
+    }
+}
+
 function Invoke-ComposeBuildWithRetry {
     param(
         [Parameter(Mandatory = $true)][string]$ServiceName,
@@ -175,6 +185,18 @@ $buildServices = @(
     "notification-service",
     "api-gateway"
 )
+
+if (Test-K3dGatewayPortConflict) {
+    throw @"
+Local k3d cluster is still exposing port 8080 through k3d-edop-serverlb.
+dev-up and k3d-up cannot own the gateway port at the same time.
+
+If you want the Docker Compose stack, run:
+  .\infra\k8s\k3d-down.ps1
+  .\dev-down.ps1
+  .\dev-up.ps1
+"@
+}
 
 Write-Host "Building application images sequentially..."
 foreach ($service in $buildServices) {

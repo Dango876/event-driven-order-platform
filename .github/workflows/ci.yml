@@ -36,29 +36,63 @@ jobs:
       - name: Unit/Integration Tests (includes Testcontainers + WebTestClient API IT)
         run: mvn -B -ntp -U test
 
-      - name: JaCoCo report (order-service)
+      - name: JaCoCo report (platform services)
         run: >
           mvn -B -ntp -U
-          -pl services/order-service -am
+          -pl services/api-gateway,services/auth-service,services/user-service,services/product-service,services/inventory-service,services/order-service,services/notification-service
+          -am
           org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent
           test
           org.jacoco:jacoco-maven-plugin:0.8.12:report
 
-      - name: Coverage gate (>= 80%)
+      - name: Coverage gate (platform services >= 80%)
         shell: bash
         run: |
-          CSV="services/order-service/target/site/jacoco/jacoco.csv"
-          if [ ! -f "$CSV" ]; then
-            echo "jacoco.csv not found: $CSV"
-            exit 1
-          fi
+          MODULES=(
+            api-gateway
+            auth-service
+            user-service
+            product-service
+            inventory-service
+            order-service
+            notification-service
+          )
 
-          COVERAGE=$(awk -F',' '
-            NR > 1 {
-              missed += $4
-              covered += $5
-            }
-            END {
+          total_missed=0
+          total_covered=0
+
+          for module in "${MODULES[@]}"; do
+            csv="services/${module}/target/site/jacoco/jacoco.csv"
+            if [ ! -f "$csv" ]; then
+              echo "jacoco.csv not found: $csv"
+              exit 1
+            fi
+
+            read -r missed covered coverage < <(
+              awk -F',' '
+                NR > 1 {
+                  missed += $4
+                  covered += $5
+                }
+                END {
+                  total = missed + covered
+                  if (total == 0) {
+                    coverage = "0.00"
+                  } else {
+                    coverage = sprintf("%.2f", (covered / total) * 100)
+                  }
+                  printf "%d %d %s", missed, covered, coverage
+                }
+              ' "$csv"
+            )
+
+            echo "${module} instruction coverage: ${coverage}%"
+            total_missed=$((total_missed + missed))
+            total_covered=$((total_covered + covered))
+          done
+
+          COVERAGE=$(awk -v missed="$total_missed" -v covered="$total_covered" '
+            BEGIN {
               total = missed + covered
               if (total == 0) {
                 print "0.00"
@@ -66,9 +100,9 @@ jobs:
                 printf "%.2f", (covered / total) * 100
               }
             }
-          ' "$CSV")
+          ')
 
-          echo "Instruction coverage: ${COVERAGE}%"
+          echo "Platform instruction coverage: ${COVERAGE}%"
           awk -v c="$COVERAGE" 'BEGIN { exit (c >= 80.0 ? 0 : 1) }'
 
       - name: Upload test and coverage artifacts
@@ -78,4 +112,4 @@ jobs:
           name: test-and-coverage-artifacts
           path: |
             **/target/surefire-reports/*.xml
-            services/order-service/target/site/jacoco/**
+            services/*/target/site/jacoco/**

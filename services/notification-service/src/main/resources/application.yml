@@ -9,6 +9,20 @@ spring:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27018/notification_db}
+
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:false}
 
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
@@ -36,9 +50,13 @@ management:
 app:
   kafka:
     topics:
+      user-created: ${KAFKA_TOPIC_USER_CREATED:user.created}
       order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
       order-status-changed: ${KAFKA_TOPIC_ORDER_STATUS_CHANGED:order.status-changed}
+
   notification:
+    sender:
+      from: ${NOTIFICATION_FROM:no-reply@procurehub.local}
     rate-limit:
       enabled: ${NOTIFICATION_RATE_LIMIT_ENABLED:true}
       capacity: ${NOTIFICATION_RATE_LIMIT_CAPACITY:20}
@@ -48,4 +66,3 @@ app:
       user-bucket-key-prefix: ${NOTIFICATION_RATE_LIMIT_USER_BUCKET_PREFIX:notification:bucket:user:}
       order-bucket-key-prefix: ${NOTIFICATION_RATE_LIMIT_ORDER_BUCKET_PREFIX:notification:bucket:order:}
       order-user-key-prefix: ${NOTIFICATION_RATE_LIMIT_ORDER_USER_PREFIX:notification:order-user:}
-

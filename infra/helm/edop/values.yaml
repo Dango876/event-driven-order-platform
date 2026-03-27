@@ -199,6 +199,27 @@ infrastructure:
     probes:
       tcpPort: 27017
 
+  - name: mailpit
+    enabled: true
+    image: axllent/mailpit:latest
+    containerPorts:
+      - name: smtp
+        containerPort: 1025
+      - name: http
+        containerPort: 8025
+    service:
+      type: ClusterIP
+      ports:
+        - name: smtp
+          port: 1025
+          targetPort: 1025
+        - name: http
+          port: 8025
+          targetPort: 8025
+    probes:
+      httpPath: /
+      httpPort: 8025
+
   - name: redis
     enabled: true
     image: redis:7-alpine
@@ -377,6 +398,7 @@ applications:
     enabled: true
     image: edop/notification-service:dev
     replicas: 1
+    enableServiceLinks: false
     containerPorts:
       - name: http
         containerPort: 8087
@@ -391,15 +413,20 @@ applications:
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
       REDIS_HOST: redis
       REDIS_PORT: "6379"
+      MONGODB_URI: mongodb://mongodb:27017/notification_db
+      MAIL_HOST: mailpit
+      MAIL_PORT: "1025"
+      NOTIFICATION_FROM: no-reply@procurehub.local
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
-      httpPath: /actuator/health
+      httpPath: /health
       httpPort: 8087
 
   - name: api-gateway
     enabled: true
     image: edop/api-gateway:dev
     replicas: 2
+    enableServiceLinks: false
     containerPorts:
       - name: http
         containerPort: 8080
@@ -417,6 +444,8 @@ applications:
       INVENTORY_SERVICE_URL: http://inventory-service:8084
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     envFromSecrets:
       - name: api-gateway
@@ -439,5 +468,3 @@ ingress:
   tls:
     enabled: false
     secretName: edop-gateway-tls
-
-

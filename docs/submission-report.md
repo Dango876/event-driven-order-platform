@@ -82,6 +82,35 @@ Main stack used:
     - subjects: `inventory.reserve-failed-value`, `inventory.reserved-value`, `order.created-value`, `order.status-changed-value`
   - `order-service` fail-path handling was cleaned up to use a single event-driven path; warning `Received inventory.reserve-failed for missing orderId=...` is no longer reproduced in runtime logs
   - local `order-service` test run on Windows completed with `43` tests, `0` failures, `0` errors, `1` skipped (`OrderLifecycleWebTestClientIT`, skipped only because of local Testcontainers/Docker Desktop detection)
+- Notification-service runtime verification and persistence completed on `2026-03-26`:
+  - `notification-service` now consumes Kafka topics:
+    - `user.created`
+    - `order.created`
+    - `order.status-changed`
+  - `notification-service` now uses MongoDB for persistent notification data:
+    - collection `notification_users` stores local recipient projection by user
+    - collection `notification_records` stores notification delivery history
+  - real email delivery is implemented via Spring Mail and verified locally through Mailpit
+  - runtime verification confirmed:
+    - user projection was populated from `user.created`
+    - order `#6` produced email `Order #6 created`
+    - order status change `RESERVATION_PENDING -> RESERVED` produced email `Order #6 status changed to RESERVED`
+  - MongoDB evidence confirmed two persisted notification records with status `SENT` for order `#6`
+  - Mailpit inbox confirmed successful delivery to `rbac-user-2@example.com`
+- Kubernetes local runtime verification in `k3d` + Helm completed on `2026-03-27`:
+  - Helm release `edop` in namespace `edop-dev` deployed successfully
+  - Helm values now include `mailpit` and Kubernetes runtime configuration for `notification-service` (`MONGODB_URI`, `MAIL_HOST`, `MAIL_PORT`, `NOTIFICATION_FROM`)
+  - `api-gateway` and `notification-service` disable Kubernetes service-link environment injection to avoid invalid generated `*_PORT` values
+  - `notification-service` liveness/readiness probes now use lightweight `/health`, which fixed `CrashLoopBackOff` seen with `/actuator/health` in local `k3d`
+  - gateway smoke checks passed for:
+    - `/actuator/health`
+    - `/swagger-ui.html`
+    - `/api-docs/auth`
+    - `/api-docs/user`
+    - `/api-docs/product`
+    - `/api-docs/inventory`
+    - `/api-docs/order`
+    - `/api-docs/notification`
 - Load/SLO baseline tooling:
   - k6 scenario: `infra/performance/k6-gateway-baseline.js`
   - run helper: `infra/performance/run-load-baseline.ps1`
@@ -112,6 +141,7 @@ Main stack used:
   - prod CD profile enables autoscaling/PDB and starts applications with 2 replicas
 - CI/CD pipeline baseline:
   - CI executes unit tests and API integration test with Testcontainers + WebTestClient (`OrderLifecycleWebTestClientIT`).
+  - CI generates JaCoCo reports for all seven application services and enforces aggregated platform instruction coverage `>= 80%`.
   - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
   - CD deploy path: Helm release to `edop-dev` and (with manual approval) to `edop-prod`.
 
@@ -124,117 +154,53 @@ From repository root:
 .\infra\k8s\k3d-up.ps1
 ```
 
-Expected result:
-
-- Helm release `edop` is deployed in namespace `edop-dev`
-- all application services are running
-- infra recovery logic handles first-attempt startup issues if needed
-
-Verification commands:
+If `mongodb` stays in `ImagePullBackOff` on local Windows + `k3d`, import `mongo:7` directly into node containerd and restart dependent deployments:
 
 ```powershell
-kubectl get pods -n edop-dev
+docker exec k3d-edop-server-0 ctr -n k8s.io images pull docker.io/library/mongo:7
+docker exec k3d-edop-agent-0 ctr -n k8s.io images pull docker.io/library/mongo:7
+kubectl delete pod -n edop-dev -l app.kubernetes.io/name=mongodb
+kubectl rollout status deployment/mongodb -n edop-dev --timeout=180s
+kubectl rollout restart deployment/product-service -n edop-dev
+kubectl rollout restart deployment/notification-service -n edop-dev
+```
+
+Validate the rollout and gateway endpoints:
+
+```powershell
+kubectl rollout status deployment/api-gateway -n edop-dev --timeout=180s
+kubectl rollout status deployment/product-service -n edop-dev --timeout=180s
+kubectl rollout status deployment/notification-service -n edop-dev --timeout=180s
 .\infra\k8s\smoke-check.ps1
 ```
 
-Expected checks:
+## 4) Verification evidence
 
-- smoke check returns HTTP 200 for health, Swagger UI, and API docs endpoints
-- JWT-protected order verification steps from `docs/order-service-local-verification.md` pass against the exposed gateway
-- order lifecycle verification confirms:
-  - `RESERVATION_PENDING -> RESERVED -> PAID -> SHIPPED -> COMPLETED`
-  - fail-path `RESERVATION_PENDING -> RESERVATION_FAILED`
-  - invalid transition is rejected with `409`
+Verification completed on `2026-03-27`.
 
-## 4) Repro steps (docker-compose)
+- Helm release `edop` in namespace `edop-dev` completed with status `deployed`
+- direct node-level `ctr` pull for `mongo:7` was executed successfully on:
+  - `k3d-edop-server-0`
+  - `k3d-edop-agent-0`
+- rollout completed successfully for:
+  - `mongodb`
+  - `api-gateway`
+  - `product-service`
+  - `notification-service`
+- `notification-service` rollout completed successfully in `k3d` after aligning Kubernetes probes to `/health`
+- gateway smoke-check passed for:
+  - `http://localhost:8080/actuator/health`
+  - `http://localhost:8080/swagger-ui.html`
+  - `http://localhost:8080/api-docs/auth`
+  - `http://localhost:8080/api-docs/user`
+  - `http://localhost:8080/api-docs/product`
+  - `http://localhost:8080/api-docs/inventory`
+  - `http://localhost:8080/api-docs/order`
+  - `http://localhost:8080/api-docs/notification`
+- final smoke-check result: `Smoke checks passed.`
 
-From repository root:
+## 5) Notes
 
-```powershell
-.\dev-up.ps1
-.\infra\k8s\smoke-check.ps1
-Invoke-WebRequest http://localhost:9090/-/ready -UseBasicParsing
-Invoke-WebRequest http://localhost:9093/-/ready -UseBasicParsing
-Invoke-WebRequest http://localhost:3100/ready -UseBasicParsing
-Get-ChildItem .\.logs\*.app.log
-.\dev-down.ps1
-```
-
-Expected result:
-
-- all infra containers and application containers are healthy
-- gateway, docs, and observability endpoints are reachable
-- fresh application logs are present in `.logs/*.app.log`
-- JWT-protected order verification from `docs/order-service-local-verification.md` passes end-to-end
-
-## 5) API and docs
-
-- Swagger UI: `http://localhost:8080/swagger-ui.html`
-- Health: `http://localhost:8080/actuator/health`
-- Prometheus: `http://localhost:9090`
-- Alertmanager: `http://localhost:9093`
-- Alert webhook sink: `http://localhost:8088`
-- Grafana: `http://localhost:3000`
-- Loki readiness: `http://localhost:3100/ready`
-- Jaeger UI: `http://localhost:16686`
-- API docs via gateway paths:
-  - `/api-docs/auth`
-  - `/api-docs/user`
-  - `/api-docs/product`
-  - `/api-docs/inventory`
-  - `/api-docs/order`
-  - `/api-docs/notification`
-
-Detailed docs:
-
-- `docs/acceptance-checklist.md`
-- `docs/alert-routing.md`
-- `docs/k3d-helm-local-run.md`
-- `docs/load-slo-baseline.md`
-- `docs/performance-sla-validation.md`
-- `docs/performance-sla-k8s-evidence.md`
-- `docs/k8s-scaling-availability-baseline.md`
-- `docs/notification-rate-limit.md`
-- `docs/observability-local-run.md`
-- `docs/order-service-local-verification.md`
-- `docs/swagger-openapi-endpoints.md`
-- `docs/tls-secrets-k8s-baseline.md`
-
-## 6) Current status vs acceptance points
-
-- Local one-command startup: done
-- k3d/k8s local deployment: done
-- Swagger/OpenAPI availability via gateway: done
-- End-to-end order lifecycle: done
-- Documented reproducible verification: done
-- Observability baseline (metrics + logs + dashboard): done
-- Alerting baseline (Prometheus rules + Alertmanager): done
-- External webhook alert routing baseline: done
-- Load/SLO baseline tooling and local run: done
-- Long-run SLA evidence on k3d (`500 RPS / 10m`): done
-- TLS/secrets k8s deployment baseline: done
-- Kubernetes scaling + no-downtime rollout baseline: done
-- CI API integration test baseline (Testcontainers + WebTestClient): done
-- CD workflow baseline (build/push + Helm dev/prod path): done
-- RBAC foundation via gateway: done
-
-## 7) Notes
-
-- This is an educational MVP focused on local reproducibility and service integration.
-- Security scans are integrated in CI and currently passing.
-- Long-run SLA evidence was generated successfully in k3d profile on `2026-03-22` and archived under `infra/performance/evidence/`.
-- Local runtime saga verification was repeated on `2026-03-26` after the fail-path cleanup; runtime logs now show a clean single event-driven failure path without the previous missing-order warning.
-- Local Windows environment still skips `OrderLifecycleWebTestClientIT` because Testcontainers does not detect Docker Desktop correctly in this setup; this is a local infrastructure limitation, not a confirmed application defect.
-- Remaining next-iteration items are owner-scoped authorization rules for user/order data and operational on-call process rollout.
-
-## 8) CI/Security evidence
-
-- CI (green, `2026-03-26`): https://github.com/Dango876/event-driven-order-platform/actions/runs/23594478487
-- Security Scan (green, `2026-03-26`): https://github.com/Dango876/event-driven-order-platform/actions/runs/23594478485
-- CD (green, `2026-03-26`): https://github.com/Dango876/event-driven-order-platform/actions/runs/23594478526
-- CD workflow definition: `.github/workflows/cd.yml`
-- Deploy prerequisites for CD stages:
-  - `KUBE_CONFIG_DEV` secret for dev Helm release
-  - `KUBE_CONFIG_PROD` secret for prod Helm release
-  - GitHub `prod` environment reviewers for manual approval gate
-
+- Local `k3d` verification on Windows exposed an image-import issue for `mongo:7`; direct node-level `ctr` pull was used as the working local recovery path.
+- If a previous manual `kubectl patch` was used for `notification-service`, Helm server-side apply can require `helm upgrade ... --force-conflicts` to reclaim ownership of probe fields.
+- This issue affects local cluster bootstrap or local field ownership only and does not change deployed application behavior after the stack is up.

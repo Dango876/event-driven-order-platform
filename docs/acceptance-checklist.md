@@ -7,7 +7,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 - Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
-Date of latest verification: 2026-03-23 (Europe/Moscow).
+Date of latest verification: 2026-03-27 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -22,6 +22,8 @@ Expected:
 
 Verification status:
 - `PASS` on Windows PowerShell.
+- Note:
+  - `.\dev-up.ps1` and `.\infra\k8s\k3d-up.ps1` are alternative local runtimes and should not be active at the same time because both expose the gateway on host port `8080`.
 - Reproducible sequence:
   1. `./dev-down.ps1`
   2. `./dev-up.ps1`
@@ -41,20 +43,22 @@ Verification status:
 
 Command:
 - `mvn -U test`
+- `mvn -U -pl services/api-gateway,services/auth-service,services/user-service,services/product-service,services/inventory-service,services/order-service,services/notification-service -am org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report`
+- local JDK 24 workaround for this workstation:
+- `.\mvnw.cmd --% -B -ntp -U -Dnet.bytebuddy.experimental=true -pl services/api-gateway,services/auth-service,services/user-service,services/product-service,services/inventory-service,services/order-service,services/notification-service -am org.jacoco:jacoco-maven-plugin:0.8.12:prepare-agent test org.jacoco:jacoco-maven-plugin:0.8.12:report`
 
 Expected:
 - Reactor build success.
-- Tests executed where present.
+- Tests executed across all application services.
+- Aggregate service instruction coverage `>= 80%`.
 
 Verification status:
-- `PASS` (latest successful run under JDK 17).
-- Latest run finished at: `2026-03-18T10:03:21+03:00`.
-- Reactor: `9/9 SUCCESS`.
-- Test summary:
-  - `Tests run: 1, Failures: 0, Errors: 0, Skipped: 0`
-  - `com.procurehub.order.api.OrderLifecycleIntegrationTest` passed.
-- Note:
-  - Several modules still contain no test classes (`No tests to run`), so coverage expansion remains backlog work.
+- `PASS`.
+- Latest platform-wide service coverage aggregation completed on `2026-03-27`.
+- Aggregate instruction coverage across `api-gateway`, `auth-service`, `user-service`, `product-service`, `inventory-service`, `order-service`, and `notification-service`: `81.06%`.
+- Local note:
+- on this Windows workstation, ad-hoc local `auth-service` verification under JDK 24 required `-Dnet.bytebuddy.experimental=true` for Mockito inline support; in Windows PowerShell the safest form is `.\mvnw.cmd --% ...` so the `-D...` argument is passed to Maven literally.
+  - CI workflow itself uses Java 17 and does not require that local-only flag.
 
 ## 2. Service health
 
@@ -124,6 +128,7 @@ Verification status:
 Evidence:
 - `.\infra\k8s\k3d-down.ps1`
 - `.\infra\k8s\k3d-up.ps1`
+- direct node-level recovery for `mongo:7` on `k3d-edop-server-0` and `k3d-edop-agent-0` when local Windows image import left `mongodb` in `ImagePullBackOff`
 - `.\infra\k8s\smoke-check.ps1` passed
 - `.\infra\k8s\order-lifecycle-check.ps1` passed
 
@@ -140,6 +145,7 @@ Notes:
 - CI includes API integration coverage with Testcontainers + WebTestClient:
   - `services/order-service/src/test/java/com/procurehub/order/api/OrderLifecycleWebTestClientIT.java`
   - `services/order-service/pom.xml` includes `**/*IT.java` in Surefire test includes.
+- CI also aggregates JaCoCo instruction coverage across all seven application services and enforces platform-wide threshold `>= 80%`.
 - CD baseline workflow is defined in:
   - `.github/workflows/cd.yml`
   - stages: Docker build/push to GHCR -> Helm release to `edop-dev` -> manual approval gate (`prod` environment) -> Helm release to `edop-prod`.
