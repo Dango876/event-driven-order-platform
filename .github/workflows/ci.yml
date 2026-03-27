@@ -81,7 +81,7 @@ jobs:
                   } else {
                     coverage = sprintf("%.2f", (covered / total) * 100)
                   }
-                  printf "%d %d %s", missed, covered, coverage
+                  printf "%d %d %s\n", missed, covered, coverage
                 }
               ' "$csv"
             )
