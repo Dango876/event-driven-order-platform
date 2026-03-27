@@ -3,7 +3,6 @@ package com.procurehub.notification.service;
 import com.procurehub.notification.model.NotificationRecord;
 import com.procurehub.notification.model.NotificationStatus;
 import com.procurehub.notification.model.NotificationType;
-import com.procurehub.notification.model.NotificationUser;
 import com.procurehub.notification.ratelimit.NotificationRateLimiter;
 import com.procurehub.notification.repository.NotificationRecordRepository;
 import com.procurehub.notification.repository.NotificationUserRepository;
