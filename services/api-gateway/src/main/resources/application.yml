@@ -117,3 +117,45 @@ spring:
             - Path=/api-docs/notification
           filters:
             - SetPath=/v3/api-docs
+
+        - id: auth-service-docs-yaml
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api-docs/auth.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml
+
+        - id: user-service-docs-yaml
+          uri: ${USER_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api-docs/user.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml
+
+        - id: product-service-docs-yaml
+          uri: ${PRODUCT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api-docs/product.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml
+
+        - id: inventory-service-docs-yaml
+          uri: ${INVENTORY_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api-docs/inventory.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml
+
+        - id: order-service-docs-yaml
+          uri: ${ORDER_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api-docs/order.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml
+
+        - id: notification-service-docs-yaml
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8087}
+          predicates:
+            - Path=/api-docs/notification.yaml
+          filters:
+            - SetPath=/v3/api-docs.yaml

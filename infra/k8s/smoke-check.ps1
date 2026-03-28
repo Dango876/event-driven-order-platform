@@ -17,9 +17,11 @@ function Assert-StatusCode {
     catch {
         throw "Cannot reach $Url. Ensure stack is running first (k3d-up or dev-up)."
     }
+
     if ($resp.StatusCode -ne $Expected) {
         throw "Unexpected status for $Url. Expected $Expected, got $($resp.StatusCode)."
     }
+
     Write-Host "[OK] $Url -> $($resp.StatusCode)"
 }
 
@@ -43,12 +45,24 @@ function Assert-GatewayReady {
 }
 
 Write-Host "Running smoke checks..."
+
 Assert-GatewayReady -BaseUrl $BaseUrl
 Assert-StatusCode -Url "$BaseUrl/swagger-ui.html"
+
+# Gateway JSON OpenAPI routes
 Assert-StatusCode -Url "$BaseUrl/api-docs/auth"
 Assert-StatusCode -Url "$BaseUrl/api-docs/user"
 Assert-StatusCode -Url "$BaseUrl/api-docs/product"
 Assert-StatusCode -Url "$BaseUrl/api-docs/inventory"
 Assert-StatusCode -Url "$BaseUrl/api-docs/order"
 Assert-StatusCode -Url "$BaseUrl/api-docs/notification"
+
+# Gateway YAML OpenAPI routes
+Assert-StatusCode -Url "$BaseUrl/api-docs/auth.yaml"
+Assert-StatusCode -Url "$BaseUrl/api-docs/user.yaml"
+Assert-StatusCode -Url "$BaseUrl/api-docs/product.yaml"
+Assert-StatusCode -Url "$BaseUrl/api-docs/inventory.yaml"
+Assert-StatusCode -Url "$BaseUrl/api-docs/order.yaml"
+Assert-StatusCode -Url "$BaseUrl/api-docs/notification.yaml"
+
 Write-Host "Smoke checks passed."

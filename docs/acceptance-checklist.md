@@ -7,7 +7,7 @@ This checklist closes Week 1 and Week 2 outcomes from the project plan:
 - Week 2: auth + gateway + product/inventory CRUD baseline + Kafka/Schema Registry integration baseline.
 - Observability baseline: Prometheus + Grafana + Loki + Alertmanager with local verification.
 
-Date of latest verification: 2026-03-27 (Europe/Moscow).
+Date of latest verification: 2026-03-28 (Europe/Moscow).
 
 ## 0. One-command local startup (required)
 
@@ -38,6 +38,12 @@ Verification status:
   - `/api-docs/inventory`
   - `/api-docs/order`
   - `/api-docs/notification`
+  - `/api-docs/auth.yaml`
+  - `/api-docs/user.yaml`
+  - `/api-docs/product.yaml`
+  - `/api-docs/inventory.yaml`
+  - `/api-docs/order.yaml`
+  - `/api-docs/notification.yaml`
 
 ## 1. Build and tests
 
@@ -83,12 +89,29 @@ Gateway endpoints:
 - UI: `http://localhost:8080/swagger-ui.html`
 - Health: `http://localhost:8080/actuator/health`
 
+Gateway JSON OpenAPI routes:
+- `http://localhost:8080/api-docs/auth`
+- `http://localhost:8080/api-docs/user`
+- `http://localhost:8080/api-docs/product`
+- `http://localhost:8080/api-docs/inventory`
+- `http://localhost:8080/api-docs/order`
+- `http://localhost:8080/api-docs/notification`
+
+Gateway YAML OpenAPI routes:
+- `http://localhost:8080/api-docs/auth.yaml`
+- `http://localhost:8080/api-docs/user.yaml`
+- `http://localhost:8080/api-docs/product.yaml`
+- `http://localhost:8080/api-docs/inventory.yaml`
+- `http://localhost:8080/api-docs/order.yaml`
+- `http://localhost:8080/api-docs/notification.yaml`
+
 Expected:
 - Swagger UI opens.
-- Aggregated API docs are reachable via gateway routes.
+- Aggregated JSON OpenAPI docs are reachable via gateway routes.
+- Aggregated YAML OpenAPI docs are reachable via gateway routes.
 
 Verification status:
-- `PASS` via smoke-check (`200` for all listed gateway API-docs endpoints).
+- `PASS` via smoke-check (`200` for all listed gateway JSON and YAML API-docs endpoints).
 
 ## 4. Order lifecycle smoke
 
@@ -114,7 +137,8 @@ Status: `CLOSED` for local acceptance baseline.
 
 Covered by evidence above:
 - Local stack starts with one command.
-- Gateway + service docs/health reachable.
+- Gateway + service health reachable.
+- Gateway JSON and YAML OpenAPI docs reachable.
 - Build/test command succeeds.
 - End-to-end order lifecycle baseline passes.
 - `user-service` exposes CRUD-style user management endpoints (`GET/POST/PUT/DELETE /users`).
