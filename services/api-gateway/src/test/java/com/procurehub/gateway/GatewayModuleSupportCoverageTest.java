@@ -5,6 +5,7 @@ import com.procurehub.gateway.api.dto.ProductGrpcResponse;
 import com.procurehub.gateway.client.ProductGrpcClient;
 import com.procurehub.gateway.config.GatewaySecurityConfig;
 import com.procurehub.gateway.config.GatewayRateLimitConfig;
+import com.procurehub.gateway.config.ProductGrpcClientConfig;
 import com.procurehub.grpc.product.v1.GetProductByIdResponse;
 import com.procurehub.grpc.product.v1.ProductServiceGrpc;
 import io.grpc.ManagedChannel;
@@ -165,6 +166,19 @@ class GatewayModuleSupportCoverageTest {
                 .expectBody()
                 .jsonPath("$.id").isEqualTo("p-42")
                 .jsonPath("$.name").isEqualTo("Bound product");
+    }
+
+    @Test
+    void grpcClientConfigShouldCreateChannelAndStub() {
+        ProductGrpcClientConfig config = new ProductGrpcClientConfig();
+        ManagedChannel channel = config.productManagedChannel("localhost", 9094);
+
+        try {
+            assertNotNull(channel);
+            assertNotNull(config.productBlockingStub(channel));
+        } finally {
+            channel.shutdownNow();
+        }
     }
 
     @Test
