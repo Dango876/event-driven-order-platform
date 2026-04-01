@@ -1,0 +1,14 @@
+{
+  "type": "record",
+  "name": "OrderCreatedEvent",
+  "namespace": "com.procurehub.order.avro",
+  "fields": [
+    { "name": "orderId", "type": "long" },
+    { "name": "userId", "type": "long" },
+    { "name": "productId", "type": "long" },
+    { "name": "quantity", "type": "int" },
+    { "name": "status", "type": "string" },
+    { "name": "statusMessage", "type": ["null", "string"], "default": null },
+    { "name": "createdAt", "type": "string" }
+  ]
+}

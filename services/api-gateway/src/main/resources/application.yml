@@ -159,3 +159,11 @@ spring:
             - Path=/api-docs/notification.yaml
           filters:
             - SetPath=/v3/api-docs.yaml
+
+product:
+  grpc:
+    host: ${PRODUCT_GRPC_HOST:127.0.0.1}
+    port: ${PRODUCT_GRPC_PORT:9094}
+
+jwt:
+  secret: ${JWT_SECRET:VGhpc0lzRGV2T25seVN1cGVyU2VjcmV0S2V5VGhhdE11c3RCZUNoYW5nZWRJblByb2QxMjM0NQ==}

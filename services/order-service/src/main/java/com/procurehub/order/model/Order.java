@@ -30,6 +30,9 @@ public class Order {
     @Column(nullable = false)
     private Integer quantity;
 
+    @Column(name = "owner_subject", length = 255)
+    private String ownerSubject;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private OrderStatus status;
@@ -62,6 +65,7 @@ public class Order {
     public Long getUserId() { return userId; }
     public Long getProductId() { return productId; }
     public Integer getQuantity() { return quantity; }
+    public String getOwnerSubject() { return ownerSubject; }
     public OrderStatus getStatus() { return status; }
     public String getStatusMessage() { return statusMessage; }
     public LocalDateTime getCreatedAt() { return createdAt; }
@@ -70,6 +74,7 @@ public class Order {
     public void setUserId(Long userId) { this.userId = userId; }
     public void setProductId(Long productId) { this.productId = productId; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
+    public void setOwnerSubject(String ownerSubject) { this.ownerSubject = ownerSubject; }
     public void setStatus(OrderStatus status) { this.status = status; }
     public void setStatusMessage(String statusMessage) { this.statusMessage = statusMessage; }
 }

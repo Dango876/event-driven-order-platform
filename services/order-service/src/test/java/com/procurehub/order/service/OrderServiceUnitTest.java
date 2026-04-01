@@ -1,10 +1,10 @@
 package com.procurehub.order.service;
 
-import com.procurehub.grpc.inventory.v1.CheckAndReserveResponse;
 import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.OrderResponse;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.exception.OrderNotFoundException;
 import com.procurehub.order.model.Order;
 import com.procurehub.order.model.OrderStatus;
 import com.procurehub.order.repository.OrderRepository;
@@ -27,11 +27,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -80,7 +80,7 @@ class OrderServiceUnitTest {
     }
 
     @Test
-    void createOrderShouldStayPendingUntilInventoryEventArrives() {
+    void createOrderShouldPublishAndStayPendingUntilInventoryEventArrives() {
         setupSaveBehaviorOnly();
 
         CreateOrderRequest request = new CreateOrderRequest();
@@ -88,51 +88,54 @@ class OrderServiceUnitTest {
         request.setProductId(2001L);
         request.setQuantity(2);
 
-        when(inventoryGrpcClient.checkAndReserve(anyLong(), anyLong(), anyInt()))
-                .thenReturn(CheckAndReserveResponse.newBuilder()
-                        .setSuccess(true)
-                        .setMessage("reserved")
-                        .setProductId(2001L)
-                        .setReservedQuantity(2)
-                        .setOrderId(1L)
-                        .build());
-
-        OrderResponse response = orderService.createOrder(request);
+        OrderResponse response = orderService.createOrder(request, "test-user@example.com");
 
         assertEquals("RESERVATION_PENDING", response.getStatus());
         assertEquals("Reservation requested", response.getStatusMessage());
         assertEquals(OrderStatus.RESERVATION_PENDING, persistedOrders.get(1L).getStatus());
+        assertEquals("test-user@example.com", persistedOrders.get(1L).getOwnerSubject());
 
         verify(orderEventPublisher).publishOrderCreated(any(Order.class));
         verify(orderEventPublisher, never()).publishOrderStatusChanged(any(Order.class), any(OrderStatus.class));
-        verify(inventoryGrpcClient).checkAndReserve(1L, 2001L, 2);
+        verifyNoInteractions(inventoryGrpcClient);
     }
 
     @Test
-    void createOrderShouldStayPendingWhenReserveFailsUntilFailureEventArrives() {
+    void createOrderShouldUseAuthenticatedUserIdWhenProvided() {
         setupSaveBehaviorOnly();
 
         CreateOrderRequest request = new CreateOrderRequest();
-        request.setUserId(101L);
+        request.setUserId(999L);
         request.setProductId(2001L);
-        request.setQuantity(1);
+        request.setQuantity(2);
 
-        when(inventoryGrpcClient.checkAndReserve(anyLong(), anyLong(), anyInt()))
-                .thenReturn(CheckAndReserveResponse.newBuilder()
-                        .setSuccess(false)
-                        .setMessage("not enough stock")
-                        .setProductId(2001L)
-                        .setOrderId(1L)
-                        .build());
+        OrderResponse response = orderService.createOrder(request, 101L, "test-user@example.com");
 
-        OrderResponse response = orderService.createOrder(request);
+        assertEquals(101L, response.getUserId());
+        assertEquals(101L, persistedOrders.get(1L).getUserId());
+    }
 
+    @Test
+    void getOrderShouldReturnOwnedOrderForMatchingSubject() {
+        Order order = buildOrder(7L, OrderStatus.RESERVATION_PENDING, "test-user@example.com");
+        when(orderRepository.findByIdAndOwnerSubject(7L, "test-user@example.com")).thenReturn(Optional.of(order));
+
+        OrderResponse response = orderService.getOrder(7L, "test-user@example.com");
+
+        assertEquals(7L, response.getId());
         assertEquals("RESERVATION_PENDING", response.getStatus());
-        assertEquals("Reservation requested", response.getStatusMessage());
-        assertEquals(OrderStatus.RESERVATION_PENDING, persistedOrders.get(1L).getStatus());
+    }
 
-        verify(orderEventPublisher).publishOrderCreated(any(Order.class));
-        verify(orderEventPublisher, never()).publishOrderStatusChanged(any(Order.class), any(OrderStatus.class));
+    @Test
+    void getOrderShouldThrowWhenOwnedOrderDoesNotMatchSubject() {
+        when(orderRepository.findByIdAndOwnerSubject(7L, "another-user@example.com")).thenReturn(Optional.empty());
+
+        OrderNotFoundException ex = assertThrows(
+                OrderNotFoundException.class,
+                () -> orderService.getOrder(7L, "another-user@example.com")
+        );
+
+        assertTrue(ex.getMessage().contains("Order not found"));
     }
 
     @Test
@@ -184,7 +187,7 @@ class OrderServiceUnitTest {
     void getOrderShouldThrowWhenNotFound() {
         when(orderRepository.findById(99L)).thenReturn(Optional.empty());
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> orderService.getOrder(99L));
+        OrderNotFoundException ex = assertThrows(OrderNotFoundException.class, () -> orderService.getOrder(99L));
         assertTrue(ex.getMessage().contains("Order not found"));
     }
 
@@ -200,6 +203,20 @@ class OrderServiceUnitTest {
         assertEquals(2, responses.size());
         assertEquals(1L, responses.get(0).getId());
         assertEquals("PAID", responses.get(1).getStatus());
+    }
+
+    @Test
+    void getAllOrdersShouldFilterByOwnerSubject() {
+        Order first = buildOrder(1L, OrderStatus.NEW, "test-user@example.com");
+
+        when(orderRepository.findAllByOwnerSubject(eq("test-user@example.com"), any(Sort.class)))
+                .thenReturn(List.of(first));
+
+        List<OrderResponse> responses = orderService.getAllOrders("test-user@example.com");
+
+        assertEquals(1, responses.size());
+        assertEquals(1L, responses.get(0).getId());
+        assertEquals("NEW", responses.get(0).getStatus());
     }
 
     @Test
@@ -233,8 +250,10 @@ class OrderServiceUnitTest {
         Order order = buildOrder(7L, OrderStatus.RESERVATION_PENDING);
         when(orderRepository.findById(7L)).thenReturn(Optional.of(order));
 
-        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
-                () -> orderService.changeStatus(7L, "WRONG_STATUS"));
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> orderService.changeStatus(7L, "WRONG_STATUS")
+        );
 
         assertTrue(ex.getMessage().contains("Unsupported status"));
         verify(orderRepository, never()).save(any(Order.class));
@@ -245,18 +264,25 @@ class OrderServiceUnitTest {
         Order order = buildOrder(7L, OrderStatus.RESERVATION_PENDING);
         when(orderRepository.findById(7L)).thenReturn(Optional.of(order));
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> orderService.changeStatus(7L, "PAID"));
+        IllegalStateException ex = assertThrows(
+                IllegalStateException.class,
+                () -> orderService.changeStatus(7L, "PAID")
+        );
 
         assertTrue(ex.getMessage().contains("Invalid status transition"));
         verify(orderRepository, never()).save(any(Order.class));
     }
 
     private Order buildOrder(long id, OrderStatus status) {
+        return buildOrder(id, status, "test-user@example.com");
+    }
+
+    private Order buildOrder(long id, OrderStatus status, String ownerSubject) {
         Order order = new Order();
         order.setUserId(101L);
         order.setProductId(2001L);
         order.setQuantity(1);
+        order.setOwnerSubject(ownerSubject);
         order.setStatus(status);
         order.setStatusMessage("status: " + status);
 

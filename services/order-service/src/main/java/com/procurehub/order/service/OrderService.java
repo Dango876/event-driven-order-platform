@@ -1,10 +1,10 @@
 package com.procurehub.order.service;
 
-import com.procurehub.grpc.inventory.v1.CheckAndReserveResponse;
 import com.procurehub.order.api.dto.CreateOrderRequest;
 import com.procurehub.order.api.dto.OrderResponse;
 import com.procurehub.order.client.InventoryGrpcClient;
 import com.procurehub.order.event.OrderEventPublisher;
+import com.procurehub.order.exception.OrderNotFoundException;
 import com.procurehub.order.model.Order;
 import com.procurehub.order.model.OrderStatus;
 import com.procurehub.order.repository.OrderRepository;
@@ -35,29 +35,42 @@ public class OrderService {
         this.orderEventPublisher = orderEventPublisher;
     }
 
-    public OrderResponse createOrder(CreateOrderRequest request) {
+    public OrderResponse createOrder(CreateOrderRequest request, String ownerSubject) {
+        if (request.getUserId() == null) {
+            throw new IllegalArgumentException("User id is required");
+        }
+
+        return createOrder(request, request.getUserId(), ownerSubject);
+    }
+
+    public OrderResponse createOrder(CreateOrderRequest request, long authenticatedUserId, String ownerSubject) {
+        if (request.getUserId() != null && !request.getUserId().equals(authenticatedUserId)) {
+            log.warn(
+                    "Ignoring mismatched request.userId={} for subject={}, authenticatedUserId={}",
+                    request.getUserId(),
+                    ownerSubject,
+                    authenticatedUserId
+            );
+        }
+
         Order order = new Order();
-        order.setUserId(request.getUserId());
+        order.setUserId(authenticatedUserId);
         order.setProductId(request.getProductId());
         order.setQuantity(request.getQuantity());
+        order.setOwnerSubject(ownerSubject);
         order.setStatus(OrderStatus.RESERVATION_PENDING);
         order.setStatusMessage("Reservation requested");
 
         order = orderRepository.save(order);
         orderEventPublisher.publishOrderCreated(order);
 
-        CheckAndReserveResponse reserve = inventoryGrpcClient.checkAndReserve(
+        log.info(
+                "Created orderId={} for subject={}, userId={}, waiting for inventory reservation event",
                 order.getId(),
-                order.getProductId(),
-                order.getQuantity()
+                ownerSubject,
+                authenticatedUserId
         );
 
-        if (!reserve.getSuccess()) {
-            log.info(
-                    "Inventory reservation rejected for orderId={}, waiting for inventory.reserve-failed event",
-                    order.getId()
-            );
-        }
         return toResponse(order);
     }
 
@@ -67,8 +80,21 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
+    public OrderResponse getOrder(Long orderId, String ownerSubject) {
+        return toResponse(findRequiredOrder(orderId, ownerSubject));
+    }
+
+    @Transactional(readOnly = true)
     public List<OrderResponse> getAllOrders() {
         return orderRepository.findAll(Sort.by(Sort.Direction.ASC, "id"))
+                .stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<OrderResponse> getAllOrders(String ownerSubject) {
+        return orderRepository.findAllByOwnerSubject(ownerSubject, Sort.by(Sort.Direction.ASC, "id"))
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -192,7 +218,12 @@ public class OrderService {
 
     private Order findRequiredOrder(Long orderId) {
         return orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found: " + orderId));
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
+    }
+
+    private Order findRequiredOrder(Long orderId, String ownerSubject) {
+        return orderRepository.findByIdAndOwnerSubject(orderId, ownerSubject)
+                .orElseThrow(() -> new OrderNotFoundException(orderId));
     }
 
     private OrderResponse toResponse(Order order) {

@@ -15,11 +15,14 @@ import com.procurehub.inventory.api.error.ApiError;
 import com.procurehub.inventory.api.error.GlobalExceptionHandler;
 import com.procurehub.inventory.event.InventoryEventPublisher;
 import com.procurehub.inventory.grpc.InventoryGrpcService;
+import com.procurehub.inventory.kafka.OrderCreatedEventsListener;
 import com.procurehub.inventory.model.InventoryItem;
 import com.procurehub.inventory.service.DistributedLockException;
 import com.procurehub.inventory.service.InventoryService;
 import com.procurehub.inventory.service.NotEnoughStockException;
+import com.procurehub.inventory.service.OrderCreatedReservationService;
 import com.procurehub.inventory.service.RedisDistributedLockService;
+import com.procurehub.order.avro.OrderCreatedEvent;
 import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -192,6 +195,44 @@ class InventoryModuleSupportCoverageTest {
 
         when(inventoryService.getByProductId(13L)).thenThrow(new IllegalArgumentException("missing"));
         grpcService.getStock(GetStockRequest.newBuilder().setProductId(13L).build(), stockObserver);
+    }
+
+    @Test
+    void orderCreatedReservationServiceShouldReserveOnceAndPublishFailureWhenNeeded() {
+        InventoryEventPublisher publisher = mock(InventoryEventPublisher.class);
+        OrderCreatedReservationService reservationService =
+                new OrderCreatedReservationService(inventoryService, publisher, redisTemplate);
+        OrderCreatedEventsListener listener = new OrderCreatedEventsListener(reservationService);
+        InventoryItemResponse reservedItem = new InventoryItemResponse();
+        reservedItem.setProductId(10L);
+        reservedItem.setAvailableQuantity(20);
+        reservedItem.setReservedQuantity(2);
+        OrderCreatedEvent event = OrderCreatedEvent.newBuilder()
+                .setOrderId(7L)
+                .setUserId(101L)
+                .setProductId(10L)
+                .setQuantity(2)
+                .setStatus("RESERVATION_PENDING")
+                .setCreatedAt(LocalDateTime.now().toString())
+                .build();
+
+        when(redisTemplate.opsForValue()).thenReturn(valueOperations);
+        when(valueOperations.setIfAbsent(eq("inventory:order-created:processed:7"), eq("PROCESSING"), any(Duration.class)))
+                .thenReturn(true)
+                .thenReturn(false)
+                .thenReturn(true);
+        when(inventoryService.reserve(10L, 2)).thenReturn(reservedItem);
+
+        listener.onOrderCreated(event);
+        verify(publisher).publishInventoryReserved(7L, 10L, 2, 20, 2, "reserved");
+
+        listener.onOrderCreated(event);
+        verify(inventoryService).reserve(10L, 2);
+
+        when(inventoryService.reserve(10L, 2)).thenThrow(new NotEnoughStockException("not enough"));
+        listener.onOrderCreated(event);
+        verify(inventoryService, org.mockito.Mockito.times(2)).reserve(10L, 2);
+        verify(publisher).publishInventoryReservationFailed(7L, 10L, 2, "not enough");
     }
 
     @Test

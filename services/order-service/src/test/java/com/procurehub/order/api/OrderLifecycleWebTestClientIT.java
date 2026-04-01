@@ -30,7 +30,9 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -46,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 class OrderLifecycleWebTestClientIT {
 
     private static final String USER_AUTHORIZATION = "Bearer " + TestJwtFactory.userToken();
+    private static final String OTHER_USER_AUTHORIZATION =
+            "Bearer " + TestJwtFactory.userToken("another-user@example.com");
     private static final String ADMIN_AUTHORIZATION = "Bearer " + TestJwtFactory.adminToken();
 
     @Container
@@ -159,6 +163,63 @@ class OrderLifecycleWebTestClientIT {
                 .jsonPath("$.id").isEqualTo(orderId.intValue())
                 .jsonPath("$.status").isEqualTo("COMPLETED")
                 .jsonPath("$.statusMessage").isEqualTo("Status changed: SHIPPED -> COMPLETED");
+    }
+
+    @Test
+    void shouldRestrictRoleUserToOwnOrders() {
+        CreateOrderRequest create = new CreateOrderRequest();
+        create.setUserId(202L);
+        create.setProductId(3001L);
+        create.setQuantity(2);
+
+        EntityExchangeResult<Map> createdResult = webTestClient.post()
+                .uri("/orders")
+                .header("Authorization", USER_AUTHORIZATION)
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(create)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class)
+                .returnResult();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> created = createdResult.getResponseBody();
+        assertNotNull(created);
+        Long orderId = ((Number) created.get("id")).longValue();
+
+        webTestClient.get()
+                .uri("/orders")
+                .header("Authorization", USER_AUTHORIZATION)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(Map.class)
+                .value(items -> assertTrue(items.stream()
+                        .map(item -> ((Number) item.get("id")).longValue())
+                        .anyMatch(id -> id.equals(orderId))));
+
+        webTestClient.get()
+                .uri("/orders")
+                .header("Authorization", OTHER_USER_AUTHORIZATION)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBodyList(Map.class)
+                .value(items -> assertFalse(items.stream()
+                        .map(item -> ((Number) item.get("id")).longValue())
+                        .anyMatch(id -> id.equals(orderId))));
+
+        webTestClient.get()
+                .uri("/orders/{id}", orderId)
+                .header("Authorization", OTHER_USER_AUTHORIZATION)
+                .exchange()
+                .expectStatus().isNotFound();
+
+        webTestClient.get()
+                .uri("/orders/{id}", orderId)
+                .header("Authorization", ADMIN_AUTHORIZATION)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody()
+                .jsonPath("$.id").isEqualTo(orderId.intValue());
     }
 
     private void confirmReservation(Long orderId, Long productId, int quantity) {

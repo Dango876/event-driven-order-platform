@@ -321,14 +321,20 @@ applications:
     containerPorts:
       - name: http
         containerPort: 8083
+      - name: grpc
+        containerPort: 9094
     service:
       type: ClusterIP
       ports:
         - name: http
           port: 8083
           targetPort: 8083
+        - name: grpc
+          port: 9094
+          targetPort: 9094
     env:
       MONGODB_URI: mongodb://mongodb:27017/product_db
+      GRPC_SERVER_PORT: "9094"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
     probes:
       httpPath: /actuator/health
@@ -441,6 +447,8 @@ applications:
       AUTH_SERVICE_URL: http://auth-service:8081
       USER_SERVICE_URL: http://user-service:8082
       PRODUCT_SERVICE_URL: http://product-service:8083
+      PRODUCT_GRPC_HOST: product-service
+      PRODUCT_GRPC_PORT: "9094"
       INVENTORY_SERVICE_URL: http://inventory-service:8084
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087

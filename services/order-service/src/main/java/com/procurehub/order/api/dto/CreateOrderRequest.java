@@ -5,7 +5,6 @@ import jakarta.validation.constraints.NotNull;
 
 public class CreateOrderRequest {
 
-    @NotNull
     private Long userId;
 
     @NotNull

@@ -1,5 +1,7 @@
 package com.procurehub.product;
 
+import com.procurehub.grpc.product.v1.GetProductByIdRequest;
+import com.procurehub.grpc.product.v1.GetProductByIdResponse;
 import com.procurehub.product.api.ErrorResponse;
 import com.procurehub.product.api.GlobalExceptionHandler;
 import com.procurehub.product.api.HealthController;
@@ -9,13 +11,19 @@ import com.procurehub.product.dto.CreateProductRequest;
 import com.procurehub.product.dto.ProductResponse;
 import com.procurehub.product.dto.UpdateProductRequest;
 import com.procurehub.product.exception.NotFoundException;
+import com.procurehub.product.grpc.ProductGrpcService;
 import com.procurehub.product.model.ProductDocument;
 import com.procurehub.product.repository.ProductRepository;
 import com.procurehub.product.service.ProductService;
+import io.grpc.stub.StreamObserver;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.MethodParameter;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -24,9 +32,6 @@ import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.core.MethodParameter;
-import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Query;
 
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
@@ -189,6 +194,38 @@ class ProductModuleSupportCoverageTest {
         assertEquals(1, controller.search(null, null, null, null, null).size());
 
         verify(service).delete("p-1");
+    }
+
+    @Test
+    void grpcServiceShouldMapProductAndNotFoundScenarios() {
+        ProductService service = mock(ProductService.class);
+        ProductGrpcService grpcService = new ProductGrpcService(service);
+        @SuppressWarnings("unchecked")
+        StreamObserver<GetProductByIdResponse> responseObserver = mock(StreamObserver.class);
+        ProductResponse product = new ProductResponse();
+        LocalDateTime now = LocalDateTime.now();
+        product.setId("p-1");
+        product.setName("Keyboard");
+        product.setDescription("Mechanical");
+        product.setCategory("peripherals");
+        product.setPrice(BigDecimal.valueOf(99.90));
+        product.setPublished(true);
+        product.setCreatedAt(now);
+        product.setUpdatedAt(now);
+
+        when(service.getById("p-1")).thenReturn(product);
+
+        grpcService.getProductById(GetProductByIdRequest.newBuilder().setProductId("p-1").build(), responseObserver);
+
+        ArgumentCaptor<GetProductByIdResponse> responseCaptor = ArgumentCaptor.forClass(GetProductByIdResponse.class);
+        verify(responseObserver).onNext(responseCaptor.capture());
+        verify(responseObserver).onCompleted();
+        assertEquals("p-1", responseCaptor.getValue().getId());
+        assertEquals("99.9", responseCaptor.getValue().getPrice());
+
+        when(service.getById("missing")).thenThrow(new NotFoundException("missing"));
+        grpcService.getProductById(GetProductByIdRequest.newBuilder().setProductId("missing").build(), responseObserver);
+        verify(responseObserver).onError(any());
     }
 
     @Test

@@ -24,7 +24,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -37,6 +41,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderLifecycleIntegrationTest {
 
     private static final String USER_AUTHORIZATION = "Bearer " + TestJwtFactory.userToken();
+    private static final String OTHER_USER_AUTHORIZATION =
+            "Bearer " + TestJwtFactory.userToken("another-user@example.com");
     private static final String ADMIN_AUTHORIZATION = "Bearer " + TestJwtFactory.adminToken();
 
     @Autowired
@@ -112,6 +118,46 @@ class OrderLifecycleIntegrationTest {
                 .andExpect(jsonPath("$.statusMessage").value("Status changed: SHIPPED -> COMPLETED"));
     }
 
+    @Test
+    void shouldRestrictRoleUserToOwnOrders() throws Exception {
+        CreateOrderRequest createRequest = new CreateOrderRequest();
+        createRequest.setUserId(101L);
+        createRequest.setProductId(2002L);
+        createRequest.setQuantity(2);
+
+        MvcResult createResult = mockMvc.perform(post("/orders")
+                        .header("Authorization", USER_AUTHORIZATION)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(createRequest)))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode createJson = objectMapper.readTree(createResult.getResponse().getContentAsString());
+        long orderId = createJson.get("id").asLong();
+
+        MvcResult ownOrdersResult = mockMvc.perform(get("/orders")
+                        .header("Authorization", USER_AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        MvcResult otherOrdersResult = mockMvc.perform(get("/orders")
+                        .header("Authorization", OTHER_USER_AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        assertTrue(readOrderIds(ownOrdersResult).contains(orderId));
+        assertFalse(readOrderIds(otherOrdersResult).contains(orderId));
+
+        mockMvc.perform(get("/orders/{orderId}", orderId)
+                        .header("Authorization", OTHER_USER_AUTHORIZATION))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/orders/{orderId}", orderId)
+                        .header("Authorization", ADMIN_AUTHORIZATION))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(orderId));
+    }
+
     private void confirmReservation(long orderId, long productId, int quantity) {
         InventoryReservedEvent event = InventoryReservedEvent.newBuilder()
                 .setOrderId(orderId)
@@ -138,5 +184,14 @@ class OrderLifecycleIntegrationTest {
                 .andExpect(jsonPath("$.id").value(orderId))
                 .andExpect(jsonPath("$.status").value(newStatus))
                 .andExpect(jsonPath("$.statusMessage").value(expectedMessage));
+    }
+
+    private List<Long> readOrderIds(MvcResult result) throws Exception {
+        JsonNode json = objectMapper.readTree(result.getResponse().getContentAsString());
+        List<Long> ids = new ArrayList<>();
+        for (JsonNode item : json) {
+            ids.add(item.get("id").asLong());
+        }
+        return ids;
     }
 }

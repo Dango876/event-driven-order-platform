@@ -1,5 +1,6 @@
 package com.procurehub.order.api.error;
 
+import com.procurehub.order.exception.OrderNotFoundException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import org.springframework.http.ResponseEntity;
@@ -10,6 +11,12 @@ import java.time.LocalDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(OrderNotFoundException.class)
+    public ResponseEntity<ApiError> handleOrderNotFound(OrderNotFoundException ex) {
+        return ResponseEntity.status(404)
+                .body(new ApiError(LocalDateTime.now(), 404, ex.getMessage()));
+    }
 
     @ExceptionHandler(StatusRuntimeException.class)
     public ResponseEntity<ApiError> handleGrpc(StatusRuntimeException ex) {

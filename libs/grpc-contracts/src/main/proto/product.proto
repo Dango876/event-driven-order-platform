@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package procurehub.product.v1;
+
+option java_multiple_files = true;
+option java_package = "com.procurehub.grpc.product.v1";
+option java_outer_classname = "ProductProto";
+
+service ProductService {
+  rpc GetProductById(GetProductByIdRequest) returns (GetProductByIdResponse);
+}
+
+message GetProductByIdRequest {
+  string productId = 1;
+}
+
+message GetProductByIdResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string category = 4;
+  string price = 5;
+  bool published = 6;
+  string createdAt = 7;
+  string updatedAt = 8;
+}

@@ -18,6 +18,10 @@ public final class TestJwtFactory {
         return token("test-user@example.com", "ROLE_USER");
     }
 
+    public static String userToken(String subject) {
+        return token(subject, "ROLE_USER");
+    }
+
     public static String adminToken() {
         return token("test-admin@example.com", "ROLE_ADMIN");
     }

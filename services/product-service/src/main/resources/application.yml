@@ -21,5 +21,9 @@ management:
     tracing:
       endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4318/v1/traces}
 
+grpc:
+  server:
+    port: ${GRPC_SERVER_PORT:9094}
+
 jwt:
   secret: ${JWT_SECRET:VGhpc0lzRGV2T25seVN1cGVyU2VjcmV0S2V5VGhhdE11c3RCZUNoYW5nZWRJblByb2QxMjM0NQ==}

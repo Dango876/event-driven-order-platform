@@ -29,9 +29,15 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
       acks: all
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP:inventory-service}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
     properties:
       schema.registry.url: ${SCHEMA_REGISTRY_URL:http://localhost:8085}
       auto.register.schemas: true
+      specific.avro.reader: true
 
   data:
     redis:
@@ -58,6 +64,7 @@ grpc:
 app:
   kafka:
     topics:
+      order-created: ${KAFKA_TOPIC_ORDER_CREATED:order.created}
       inventory-reserved: ${KAFKA_TOPIC_INVENTORY_RESERVED:inventory.reserved}
       inventory-reserve-failed: ${KAFKA_TOPIC_INVENTORY_RESERVE_FAILED:inventory.reserve-failed}
 

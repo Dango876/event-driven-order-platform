@@ -288,11 +288,13 @@ services:
     environment:
       MONGODB_URI: mongodb://mongodb:27017/product_db
       OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318/v1/traces
+      GRPC_SERVER_PORT: 9094
       LOGGING_FILE_NAME: /var/log/edop/product-service.app.log
     volumes:
       - ./.logs:/var/log/edop
     ports:
       - "8083:8083"
+      - "9094:9094"
 
   inventory-service:
     build:
@@ -418,6 +420,8 @@ services:
       AUTH_SERVICE_URL: http://auth-service:8081
       USER_SERVICE_URL: http://user-service:8082
       PRODUCT_SERVICE_URL: http://product-service:8083
+      PRODUCT_GRPC_HOST: product-service
+      PRODUCT_GRPC_PORT: 9094
       INVENTORY_SERVICE_URL: http://inventory-service:8084
       ORDER_SERVICE_URL: http://order-service:8086
       NOTIFICATION_SERVICE_URL: http://notification-service:8087

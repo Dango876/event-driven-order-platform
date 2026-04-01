@@ -9,5 +9,6 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 COPY --from=builder /workspace/services/product-service/target/product-service-1.0-SNAPSHOT.jar /app/app.jar
 EXPOSE 8083
+EXPOSE 9094
 ENV JAVA_OPTS=""
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
