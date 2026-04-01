@@ -2,6 +2,13 @@
 
 This document describes the repository CI/CD baseline aligned with technical requirement 9.0.
 
+Latest verification status: `2026-04-01` (Europe/Moscow), commit `da59949`.
+
+Confirmed green:
+- `CI`
+- `Security Scan`
+- `CD`
+
 ## Workflows
 
 - CI: `.github/workflows/ci.yml`
@@ -26,6 +33,11 @@ CI pipeline includes:
   - `order-service`
   - `notification-service`
 - Aggregated platform instruction coverage gate (`>= 80%`) across all listed services
+
+Latest verified result:
+- local full test suite: `BUILD SUCCESS`
+- local aggregated service instruction coverage: `80.1211%`
+- platform coverage gate passes after adding support coverage for `api-gateway`
 
 ## CD (push to main/master or manual dispatch)
 
@@ -60,4 +72,12 @@ Optional:
 - Helm chart path used by CD: `infra/helm/edop`.
 - Prod deploy enables ingress TLS in chart values and uses secret `edop-gateway-tls`.
 - Prod deploy also enables HPA/PDB scaling baseline for availability and no-downtime rolling updates.
-- Latest local aggregated JaCoCo result for service modules: `81.06%` instruction coverage (`2026-03-27`).
+- Latest local aggregated JaCoCo result for service modules: `80.1211%` instruction coverage (`2026-04-01`).
+- Security workflow details:
+  - OWASP Dependency-Check runs as aggregate scan with NVD API key support
+  - Trivy filesystem gate enforces `0` critical vulnerabilities
+  - Trivy config gate enforces `0` critical misconfigurations
+- Latest security remediation:
+  - managed dependency update in root `pom.xml`
+  - `spring-security-web` upgraded from vulnerable `6.3.10` resolution to fixed `6.5.9`
+  - local reproduction of Trivy FS gate and config gate completed successfully with exit code `0`

@@ -2,6 +2,25 @@
 
 Local development and validation commands for the project.
 
+## Current verified status
+
+Latest end-to-end verification completed on `2026-04-01` (Europe/Moscow).
+
+Confirmed:
+- local full test suite is green: `mvn -B -ntp test`
+- local aggregated JaCoCo service coverage is green: `80.1211%`
+- GitHub Actions are green for commit `da59949`:
+  - `CI`
+  - `Security Scan`
+  - `CD`
+- runtime checks passed on local Docker Compose stack:
+  - `inventory-service` consumes `order.created` and publishes `inventory.reserved`
+  - `api-gateway` -> `product-service` gRPC read path returns the same product payload as HTTP
+  - `ROLE_USER` sees only own orders; another user gets `404` on direct access to another user's order
+  - order lifecycle check passes:
+    - `RESERVATION_PENDING -> RESERVED -> PAID -> SHIPPED -> COMPLETED`
+    - invalid transition `COMPLETED -> CANCELLED` is rejected with `409`
+
 ## Local one-command startup
 
 PowerShell:
@@ -158,3 +177,22 @@ Expected result:
 - `/api/users` with `ADMIN` -> `200`
 - `/api/orders` with `USER` -> `200`
 - `/api/orders/stock/1001` with `ADMIN` -> `200`
+
+## Latest runtime evidence
+
+Verification repeated on `2026-04-01` through `.\dev-up.ps1` local stack:
+
+- gateway health: `UP`
+- Prometheus: `200`
+- Alertmanager: `200`
+- Jaeger: `200`
+- Grafana: `200`
+- Loki: `ready`
+- alert webhook sink: reachable on `http://localhost:8088`
+- `inventory-service` logs confirmed:
+  - `Inventory-service consumed order.created: orderId=11, productId=2001, quantity=2`
+  - `Published inventory.reserved for orderId=11, productId=2001`
+- `order-service` logs confirmed:
+  - order `11` created with `RESERVATION_PENDING`
+  - reservation event consumed and order moved to `RESERVED`
+- `notification-service` logs confirmed notification flow for verified order events

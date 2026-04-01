@@ -144,6 +144,25 @@ Main stack used:
   - CI generates JaCoCo reports for all seven application services and enforces aggregated platform instruction coverage `>= 80%`.
   - CD workflow (`.github/workflows/cd.yml`) builds and pushes service images to GHCR.
   - CD deploy path: Helm release to `edop-dev` and (with manual approval) to `edop-prod`.
+- Latest full local + GitHub verification completed on `2026-04-01`:
+  - local `mvn -B -ntp test` completed with `BUILD SUCCESS`
+  - local aggregated JaCoCo service coverage completed with `80.1211%`
+  - `inventory-service` runtime verification confirmed Kafka consumption of `order.created` and publication of `inventory.reserved`
+  - `api-gateway` runtime verification confirmed `/api/grpc/products/{id}` returns the same product payload as `/api/products/{id}`
+  - order visibility verification confirmed:
+    - order owner sees own order
+    - another `ROLE_USER` does not see that order in list
+    - direct fetch of another user's order returns `404`
+    - `ROLE_ADMIN` still sees the order
+  - `.\infra\k8s\order-lifecycle-check.ps1 -RequestTimeoutSec 90 -OrderCreateRetries 5 -RetryDelaySec 5` passed on local stack
+  - GitHub Actions were green for commit `da59949`:
+    - `CI`
+    - `Security Scan`
+    - `CD`
+- Security remediation completed on `2026-04-01`:
+  - root dependency management was patched to import fixed Spring Security and Spring Framework BOMs
+  - `spring-security-web` now resolves to `6.5.9`
+  - local Trivy filesystem gate and config gate both pass with exit code `0`
 
 ## 3) Repro steps (k3d + Helm)
 
@@ -176,7 +195,7 @@ kubectl rollout status deployment/notification-service -n edop-dev --timeout=180
 
 ## 4) Verification evidence
 
-Verification completed on `2026-03-27`.
+Verification completed on `2026-04-01`.
 
 - Helm release `edop` in namespace `edop-dev` completed with status `deployed`
 - direct node-level `ctr` pull for `mongo:7` was executed successfully on:
@@ -198,6 +217,20 @@ Verification completed on `2026-03-27`.
   - `http://localhost:8080/api-docs/order`
   - `http://localhost:8080/api-docs/notification`
 - final smoke-check result: `Smoke checks passed.`
+- local runtime verification additionally confirmed:
+  - `inventory-service` consumed `order.created` for verified order `11`
+  - `order-service` moved order `11` from `RESERVATION_PENDING` to `RESERVED`
+  - `api-gateway` gRPC product read returned the same `id`, `name`, `category`, and `price` as HTTP read
+  - observability endpoints returned expected success status:
+    - Prometheus `200`
+    - Alertmanager `200`
+    - Jaeger `200`
+    - Grafana `200`
+    - Loki `ready`
+- GitHub Actions verification additionally confirmed all three workflows green for commit `da59949`:
+  - `CI`
+  - `Security Scan`
+  - `CD`
 
 ## 5) Notes
 

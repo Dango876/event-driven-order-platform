@@ -1,8 +1,8 @@
 # Project Passport (MVP)
 
-Date: 2026-03-27 (Europe/Moscow)
+Date: 2026-04-01 (Europe/Moscow)
 Repository: `Dango876/event-driven-order-platform`
-Stage: MVP / acceptance baseline complete, including local k3d + Helm verification
+Stage: MVP / acceptance baseline complete, including local Docker Compose verification, k3d + Helm verification, and green GitHub Actions
 
 ## 1) Project summary
 
@@ -56,18 +56,26 @@ Core stack:
   - `notification-service` probes aligned to lightweight `/health` for stable local rollout
   - local Windows recovery path documented for `mongo:7` import via node-level `ctr`
 - CI/CD baseline:
-  - CI + Security workflows green.
+  - CI + Security + CD workflows green for commit `da59949`.
   - CI enforces aggregated JaCoCo instruction coverage `>= 80%` across all seven application services.
   - CD workflow defined in `.github/workflows/cd.yml`.
   - API integration test with Testcontainers + WebTestClient in `order-service`.
+- Latest locally re-verified runtime behaviors (`2026-04-01`):
+  - `inventory-service` consumes `order.created` and publishes `inventory.reserved`
+  - `api-gateway` -> `product-service` gRPC route returns the same product payload as HTTP route
+  - `order-service` enforces owner-only order visibility for `ROLE_USER`
+  - order lifecycle check passes end to end on local stack
+- Latest dependency/security state:
+  - managed dependency fix applied in root `pom.xml`
+  - `spring-security-web` now resolves to `6.5.9`
+  - Trivy filesystem gate and config gate both pass locally
 
 ## 3) Evidence links
 
-- CI green run: [Run #23314850628](https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850628)
-- Security green run: [Run #23314850635](https://github.com/Dango876/event-driven-order-platform/actions/runs/23314850635)
 - Latest CI runs page: [CI workflow](https://github.com/Dango876/event-driven-order-platform/actions/workflows/ci.yml)
 - Latest Security page: [Security workflow](https://github.com/Dango876/event-driven-order-platform/actions/workflows/security.yml)
 - CD workflow page: [cd.yml workflow](https://github.com/Dango876/event-driven-order-platform/actions/workflows/cd.yml)
+- Latest verified green commit: `da59949` (`Patch Spring Security CVE in managed dependencies`)
 
 Detailed acceptance evidence:
 - `docs/acceptance-checklist.md`
@@ -92,11 +100,12 @@ Detailed acceptance evidence:
 ## 5) Current status vs TZ
 
 - Mandatory acceptance baseline: completed.
-- CI/Security baseline: completed and green.
+- CI/Security/CD baseline: completed and green.
 - Local deploy/repro and observability baseline: completed.
 - Local k3d + Helm verification baseline: completed.
 - K8s TLS/secrets deployment baseline: completed.
 - K8s scaling + no-downtime rollout baseline: completed.
+- Security dependency remediation baseline: completed.
 
 ## 6) Remaining production-hardening items (not blocking MVP)
 
