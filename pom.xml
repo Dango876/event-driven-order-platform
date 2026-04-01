@@ -31,6 +31,8 @@
     <properties>
         <java.version>17</java.version>
         <spring-boot.version>3.3.13</spring-boot.version>
+        <spring-security.version>6.5.9</spring-security.version>
+        <spring.version>6.2.16</spring.version>
         <springdoc.version>2.6.0</springdoc.version>
         <maven.surefire.version>3.2.5</maven.surefire.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -40,6 +42,20 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>org.springframework.security</groupId>
+                <artifactId>spring-security-bom</artifactId>
+                <version>${spring-security.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.springframework</groupId>
+                <artifactId>spring-framework-bom</artifactId>
+                <version>${spring.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
